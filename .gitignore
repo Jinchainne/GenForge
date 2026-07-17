@@ -49,3 +49,5 @@ __pycache__/
 
 *.run.xml
 **/spoon.classpath.tmp
+/.vercel
+/.env.local
