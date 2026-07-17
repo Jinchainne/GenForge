@@ -67,6 +67,7 @@ Enterprise dispute intake
 - OBSERVED: the enterprise dispute workspace was upgraded with commercial control-tower fields, counterparty packet planning, and audit-trail views on July 17, 2026.
 - OBSERVED: the top-level workspace shell was redesigned on July 17, 2026 with a runtime registry, capability index, and design-system-inspired control surface while preserving real GenLayer status boundaries.
 - OBSERVED: a `Contract Ops` workspace and `/api/ops/genlayer` operator route were added on July 17, 2026 to expose live CLI status, deployment blockers, and guarded deployment commands.
+- OBSERVED: the contract-ops flow was refined on July 17, 2026 to separate operator deployment readiness from browser-wallet submission readiness, preventing public env gaps from being mislabeled as deploy blockers.
 - MANUAL_REVIEW_REQUIRED: `npm run test:contract:direct` is currently blocked on this Windows host by a `gltest` temp-file `PermissionError` while replacing stdin, affecting both the existing review contract tests and the new dispute contract tests.
 - MISSING: a funded GenLayer deployment account for live contract deployment.
 - MISSING: production `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS` in Vercel.

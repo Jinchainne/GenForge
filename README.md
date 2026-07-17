@@ -57,6 +57,11 @@ Optional for browser-wallet enterprise dispute submission:
 - `NEXT_PUBLIC_GENLAYER_RPC_URL`
 - `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS`
 - `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`
+- `NEXT_PUBLIC_GENLAYER_STUDIO_URL`
+
+Optional for secure operator-side live deploy commands:
+
+- `GENFORGE_ENABLE_OPERATOR_DEPLOY=true`
 
 Optional for explicit mock mode in local demos and tests:
 
@@ -81,8 +86,27 @@ Recommended Vercel environment variables:
 - `GENLAYER_CONTRACT_ADDRESS`
 - `GENLAYER_RPC_URL`
 - `GENLAYER_PRIVATE_KEY`
+- `NEXT_PUBLIC_GENLAYER_NETWORK`
+- `NEXT_PUBLIC_GENLAYER_RPC_URL`
+- `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS`
+- `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`
+- `NEXT_PUBLIC_GENLAYER_STUDIO_URL`
 
 The repository includes [apps/web/vercel.json](/abs/path/C:/Users/Asus/Desktop/genforge-submission/apps/web/vercel.json:1) to pin API max duration for the review and dispute routes.
+
+Observed production constraint on July 17, 2026:
+
+- OBSERVED: the hosted `/api/ops/genlayer` endpoint on Vercel reports `spawn genlayer ENOENT`, so Vercel is currently an inspect-only surface for contract ops.
+- INFERRED: live `genlayer deploy` commands should run from a secure operator machine or CI runner where the GenLayer CLI is installed and funded, then the resulting contract addresses should be written back into Vercel public env vars.
+
+## Go-live sequence
+
+1. Fund the active operator account with GEN.
+2. Run `genlayer network studionet` or the intended target network.
+3. Deploy `contracts/genforge_judge/review_submission.py`.
+4. Deploy `contracts/genforge_judge/resolve_enterprise_dispute.py`.
+5. Copy the real contract addresses into Vercel as `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS` and `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`.
+6. Redeploy `apps/web`, then verify wallet submission and receipt tracking from the browser UI.
 
 ## Contract tests
 
@@ -130,4 +154,5 @@ npm run build:genforge
 - Live wallet writes still require deployed GenLayer contract addresses and funded accounts.
 - Studio and Explorer verification are still manual unless a live GenLayer environment is configured.
 - The included contract scaffolds have not been deployed from this workspace because the available local accounts were unfunded on July 17, 2026.
+- OBSERVED: the local CLI is configured for `studionet`, but the active account showed `0 GEN` on July 17, 2026, which blocks real deployment from this workspace until it is funded.
 - Contract direct/integration tests exist for both review and enterprise dispute flows, but live Studio-backed execution still depends on a local or hosted GenLayer environment plus Python dependencies from `contracts/genforge_judge/requirements.txt`.

@@ -8,6 +8,7 @@ type ParsedRecord = Record<string, string | boolean>;
 
 export interface GenLayerCliStatus {
   cliAvailable: boolean;
+  operatorDeployEnabled: boolean;
   observedAt: string;
   network: {
     alias: string;
@@ -30,6 +31,10 @@ export interface GenLayerCliStatus {
     rpcUrl?: string;
     reviewContractAddress?: string;
     disputeContractAddress?: string;
+  };
+  browserSubmissionReadiness: {
+    status: "ready" | "blocked";
+    blockers: string[];
   };
   deployReadiness: {
     status:
@@ -108,6 +113,8 @@ function getDeployCommand(contract: "review" | "dispute"): string {
 
 export async function getGenLayerCliStatus(): Promise<GenLayerCliStatus> {
   const observedAt = new Date().toISOString();
+  const operatorDeployEnabled =
+    process.env.GENFORGE_ENABLE_OPERATOR_DEPLOY === "true";
   const publicRuntime = {
     network: process.env.NEXT_PUBLIC_GENLAYER_NETWORK,
     rpcUrl: process.env.NEXT_PUBLIC_GENLAYER_RPC_URL,
@@ -137,27 +144,49 @@ export async function getGenLayerCliStatus(): Promise<GenLayerCliStatus> {
     const network = extractResultBlock(networkOutput);
     const account = extractResultBlock(accountOutput);
 
-    const blockers: string[] = [];
+    const deployBlockers: string[] = [];
+    const browserBlockers: string[] = [];
     const balance = typeof account?.balance === "string" ? account.balance : "";
 
+    if (!network) {
+      deployBlockers.push(
+        "The active GenLayer network could not be parsed from `genlayer network info`.",
+      );
+    }
+    if (!account) {
+      deployBlockers.push(
+        "The active GenLayer account could not be parsed from `genlayer account show`.",
+      );
+    }
     if (!balance || /^0(\.0+)?\s+GEN$/i.test(balance)) {
-      blockers.push(
+      deployBlockers.push(
         "The active GenLayer account has 0 GEN, so live deployment cannot proceed.",
       );
     }
+    if (!publicRuntime.network) {
+      browserBlockers.push(
+        "NEXT_PUBLIC_GENLAYER_NETWORK is not configured for browser-wallet submission.",
+      );
+    }
+    if (!publicRuntime.rpcUrl) {
+      browserBlockers.push(
+        "NEXT_PUBLIC_GENLAYER_RPC_URL is not configured for browser-wallet submission.",
+      );
+    }
     if (!publicRuntime.reviewContractAddress) {
-      blockers.push(
+      browserBlockers.push(
         "NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS is not configured for the repository review contract.",
       );
     }
     if (!publicRuntime.disputeContractAddress) {
-      blockers.push(
+      browserBlockers.push(
         "NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS is not configured for the dispute contract.",
       );
     }
 
     return {
       cliAvailable: true,
+      operatorDeployEnabled,
       observedAt,
       network: network
         ? {
@@ -180,9 +209,22 @@ export async function getGenLayerCliStatus(): Promise<GenLayerCliStatus> {
           }
         : null,
       publicRuntime,
+      browserSubmissionReadiness: {
+        status: browserBlockers.length === 0 ? "ready" : "blocked",
+        blockers: browserBlockers,
+      },
       deployReadiness: {
-        status: blockers.length === 0 ? "ready_to_deploy" : "blocked",
-        blockers,
+        status: !operatorDeployEnabled
+          ? "operator_disabled"
+          : deployBlockers.length === 0
+            ? "ready_to_deploy"
+            : "blocked",
+        blockers: !operatorDeployEnabled
+          ? [
+              "Operator deployment is disabled. Set GENFORGE_ENABLE_OPERATOR_DEPLOY=true in the secure operator environment before running live deploy commands.",
+              ...deployBlockers,
+            ]
+          : deployBlockers,
         commands,
       },
     };
@@ -192,10 +234,42 @@ export async function getGenLayerCliStatus(): Promise<GenLayerCliStatus> {
 
     return {
       cliAvailable: false,
+      operatorDeployEnabled,
       observedAt,
       network: null,
       account: null,
       publicRuntime,
+      browserSubmissionReadiness: {
+        status:
+          publicRuntime.reviewContractAddress &&
+          publicRuntime.disputeContractAddress &&
+          publicRuntime.network &&
+          publicRuntime.rpcUrl
+            ? "ready"
+            : "blocked",
+        blockers: [
+          ...(!publicRuntime.network
+            ? [
+                "NEXT_PUBLIC_GENLAYER_NETWORK is not configured for browser-wallet submission.",
+              ]
+            : []),
+          ...(!publicRuntime.rpcUrl
+            ? [
+                "NEXT_PUBLIC_GENLAYER_RPC_URL is not configured for browser-wallet submission.",
+              ]
+            : []),
+          ...(!publicRuntime.reviewContractAddress
+            ? [
+                "NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS is not configured for the repository review contract.",
+              ]
+            : []),
+          ...(!publicRuntime.disputeContractAddress
+            ? [
+                "NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS is not configured for the dispute contract.",
+              ]
+            : []),
+        ],
+      },
       deployReadiness: {
         status: "cli_unavailable",
         blockers: [message],

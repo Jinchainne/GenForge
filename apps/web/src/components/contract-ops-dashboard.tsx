@@ -6,6 +6,7 @@ type OpsStatusResponse = {
   ok: true;
   status: {
     cliAvailable: boolean;
+    operatorDeployEnabled: boolean;
     observedAt: string;
     network: {
       alias: string;
@@ -28,6 +29,10 @@ type OpsStatusResponse = {
       rpcUrl?: string;
       reviewContractAddress?: string;
       disputeContractAddress?: string;
+    };
+    browserSubmissionReadiness: {
+      status: "ready" | "blocked";
+      blockers: string[];
     };
     deployReadiness: {
       status:
@@ -71,6 +76,11 @@ export function ContractOpsDashboard() {
     message:
       "Refresh the operator status to inspect live deployment blockers and contract readiness.",
   });
+  const canAttemptDeploy =
+    status?.deployReadiness.status === "ready_to_deploy" &&
+    deployState.status !== "running";
+  const operatorRailState = status?.deployReadiness.status ?? "idle";
+  const browserRailState = status?.browserSubmissionReadiness.status ?? "idle";
 
   async function loadStatus(options?: { showLoading?: boolean }) {
     if (options?.showLoading ?? true) {
@@ -181,10 +191,24 @@ export function ContractOpsDashboard() {
           <div className="status-rail" aria-label="Operator workflow">
             <span className="done">CLI</span>
             <span className={status?.account ? "done" : "active"}>Account</span>
-            <span className={status?.deployReadiness.status === "ready_to_deploy" ? "done" : "active"}>
+            <span
+              className={
+                status?.deployReadiness.status === "ready_to_deploy"
+                  ? "done"
+                  : "active"
+              }
+            >
               Deploy
             </span>
-            <span>Receipt</span>
+            <span
+              className={
+                status?.browserSubmissionReadiness.status === "ready"
+                  ? "done"
+                  : "active"
+              }
+            >
+              Wallet
+            </span>
           </div>
           <p className="footnote">
             Hosted production can inspect configuration, but real deployment
@@ -199,7 +223,7 @@ export function ContractOpsDashboard() {
               <div className="eyebrow">Operator Registry</div>
               <h3>Live GenLayer status</h3>
             </div>
-            <span>{loading ? "loading" : status?.deployReadiness.status ?? "idle"}</span>
+            <span>{loading ? "loading" : operatorRailState}</span>
           </div>
           <div className="action-row">
               <button
@@ -234,8 +258,16 @@ export function ContractOpsDashboard() {
               <dd>{status?.account?.name ?? "Not loaded"}</dd>
             </div>
             <div>
+              <dt>Address</dt>
+              <dd>{status?.account?.address ?? "Not loaded"}</dd>
+            </div>
+            <div>
               <dt>Balance</dt>
               <dd>{status?.account?.balance ?? "Not loaded"}</dd>
+            </div>
+            <div>
+              <dt>Operator deploy</dt>
+              <dd>{status?.operatorDeployEnabled ? "enabled" : "disabled"}</dd>
             </div>
           </dl>
         </section>
@@ -246,7 +278,7 @@ export function ContractOpsDashboard() {
           <section className="panel">
             <div className="panel-header">
               <h3>Deploy Readiness</h3>
-              <span>{status?.deployReadiness.status ?? "unknown"}</span>
+              <span>{operatorRailState}</span>
             </div>
             {status?.deployReadiness.blockers.length ? (
               <div className="error-callout">
@@ -270,6 +302,31 @@ export function ContractOpsDashboard() {
 
           <section className="panel">
             <div className="panel-header">
+              <h3>Browser Submission Readiness</h3>
+              <span>{browserRailState}</span>
+            </div>
+            {status?.browserSubmissionReadiness.blockers.length ? (
+              <div className="error-callout">
+                <strong>Public wallet blockers</strong>
+                <ul className="stack-list compact-list">
+                  {status.browserSubmissionReadiness.blockers.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="callout">
+                <strong>Browser wallet path is configured</strong>
+                <p>
+                  MetaMask submission can target the configured review and
+                  dispute contracts from the hosted interface.
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section className="panel">
+            <div className="panel-header">
               <h3>Operator Commands</h3>
               <span>{status?.deployReadiness.commands.length ?? 0}</span>
             </div>
@@ -285,7 +342,7 @@ export function ContractOpsDashboard() {
                       type="button"
                       className="secondary-button"
                       onClick={() => void handleDeploy(item.id)}
-                      disabled={deployState.status === "running"}
+                      disabled={!canAttemptDeploy}
                     >
                       Deploy
                     </button>
@@ -344,6 +401,36 @@ export function ContractOpsDashboard() {
 
           <section className="panel">
             <div className="panel-header">
+              <h3>Go-Live Playbook</h3>
+              <span>official path</span>
+            </div>
+            <ul className="stack-list">
+              <li>
+                Fund the active account with GEN. Official GenLayer docs list a
+                built-in faucet in the account selector for Localnet and
+                Studionet, and `testnet-faucet.genlayer.foundation` for Asimov
+                and Bradbury.
+              </li>
+              <li>
+                Deploy from a secure operator environment where the `genlayer`
+                CLI is installed and `GENFORGE_ENABLE_OPERATOR_DEPLOY=true`.
+              </li>
+              <li>
+                After deployment, write the real contract addresses into
+                `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS` and
+                `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`, then redeploy
+                `apps/web`.
+              </li>
+              <li>
+                Use the application wallet flow only after the public runtime is
+                green; wallet connectivity alone is not proof of deployed
+                GenLayer judges.
+              </li>
+            </ul>
+          </section>
+
+          <section className="panel">
+            <div className="panel-header">
               <h3>Network Registry</h3>
               <span>{status?.network?.alias ?? "unknown"}</span>
             </div>
@@ -358,6 +445,9 @@ export function ContractOpsDashboard() {
               <li>
                 <strong>Explorer:</strong>{" "}
                 {status?.network?.explorer ?? "Not loaded"}
+              </li>
+              <li>
+                <strong>Studio:</strong> https://studio.genlayer.com
               </li>
             </ul>
           </section>

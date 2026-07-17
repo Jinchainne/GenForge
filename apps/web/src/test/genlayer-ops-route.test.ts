@@ -19,6 +19,7 @@ describe("GET /api/ops/genlayer", () => {
   it("returns the observed operator status", async () => {
     getGenLayerCliStatusMock.mockResolvedValue({
       cliAvailable: true,
+      operatorDeployEnabled: false,
       observedAt: "2026-07-17T12:00:00.000Z",
       network: {
         alias: "studionet",
@@ -40,9 +41,13 @@ describe("GET /api/ops/genlayer", () => {
         network: "studionet",
         rpcUrl: "https://studio.genlayer.com/api",
       },
-      deployReadiness: {
+      browserSubmissionReadiness: {
         status: "blocked",
-        blockers: ["The active GenLayer account has 0 GEN."],
+        blockers: ["NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS is missing."],
+      },
+      deployReadiness: {
+        status: "operator_disabled",
+        blockers: ["Operator deployment is disabled."],
         commands: [],
       },
     });
