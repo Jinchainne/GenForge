@@ -297,9 +297,9 @@ export function ReviewDashboard() {
         <ProgressPanel state={state} report={report} errorCode={errorCode} />
 
         <section className="panel submission-panel">
-          <div className="panel-header">
+          <div className="submission-intro">
             <h1>GenForge</h1>
-            <span>AI-native engineering review for GenLayer</span>
+            <p>AI-native engineering review for GenLayer</p>
           </div>
           <div className="scope-strip" aria-label="Review scope">
             <span>Deterministic gate</span>
