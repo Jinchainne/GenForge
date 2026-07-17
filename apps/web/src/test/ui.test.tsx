@@ -1,15 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ReviewDashboard } from "@/components/review-dashboard";
+import { WorkspaceShell } from "@/components/workspace-shell";
 
-describe("ReviewDashboard", () => {
-  it("renders the submission form and review copy", () => {
-    render(<ReviewDashboard />);
+describe("WorkspaceShell", () => {
+  it("renders the enterprise workspace by default", () => {
+    render(<WorkspaceShell />);
 
-    expect(screen.getByText("GenForge")).toBeInTheDocument();
-    expect(screen.getByText("Ready for Repository Intake")).toBeInTheDocument();
-    expect(
-      screen.getByLabelText("Public GitHub repository URL"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("GenForge Control Surface")).toBeInTheDocument();
+    expect(screen.getByText("Enterprise Dispute")).toBeInTheDocument();
+    expect(screen.getByLabelText("Case title")).toBeInTheDocument();
+    expect(screen.getByText("Generate Enterprise Dossier")).toBeInTheDocument();
   });
 });

@@ -12,13 +12,22 @@ GitHub submission
 -> deterministic confidence scoring
 -> builder-facing report and accepted-submission ranking
 
+Enterprise dispute intake
+-> bilateral party capture
+-> evidence readiness checks
+-> bounded adjudication packet construction
+-> wallet-ready GenLayer escalation
+-> resubmission workflow preparation
+
 ## Current phase
 
 1. Keep the deterministic GitHub intake and report pipeline as the read-only evidence stage.
 2. Add browser-wallet GenLayer submission helpers that follow the official MetaMask plus `client.connect()` pattern.
-3. Rewire `apps/web` into a workflow surface: detect issues, fix guidance, resubmit history, wallet connect, on-chain submit, and receipt refresh.
+3. Rewire `apps/web` into a workflow surface with dual workspaces:
+   repository review and enterprise dispute adjudication.
 4. Preserve the bounded-request contract flow and avoid claiming live success without a verified receipt.
-5. Verify with typecheck, tests, and production build after each UI and SDK slice.
+5. Add deterministic dispute dossier generation, issue triage, and evidence-pack shaping before any on-chain escalation.
+6. Verify with typecheck, tests, and production build after each UI and SDK slice.
 
 ## Constraints
 
@@ -47,3 +56,12 @@ GitHub submission
 - `packages/genlayer-client/**/*`
 - `contracts/genforge_judge/**/*`
 - `tests/fixtures/**/*`
+
+## Latest evidence
+
+- OBSERVED: `npm run lint:genforge` passed on July 17, 2026.
+- OBSERVED: `npm run typecheck:genforge` passed on July 17, 2026.
+- OBSERVED: `npm run test:genforge` passed with 30 tests on July 17, 2026.
+- OBSERVED: `npm run build:genforge` passed on July 17, 2026.
+- MISSING: a funded GenLayer deployment account for live contract deployment.
+- MISSING: production `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS` in Vercel.

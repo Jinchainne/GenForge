@@ -1,5 +1,5 @@
-import { ReviewDashboard } from "@/components/review-dashboard";
+import { WorkspaceShell } from "@/components/workspace-shell";
 
 export default function Page() {
-  return <ReviewDashboard />;
+  return <WorkspaceShell />;
 }
