@@ -1,0 +1,41 @@
+{
+  "submissionId": "submission-demo",
+  "repository": {
+    "owner": "builder",
+    "name": "judge-dapp",
+    "commitSha": "abc1234def5678"
+  },
+  "program": "genlayer-project-review-v1",
+  "gate": {
+    "decision": "ACCEPT_FOR_SCORING",
+    "passedRuleIds": [
+      "GL-GATE-003",
+      "GL-GATE-004",
+      "GL-GATE-005"
+    ],
+    "failedRuleIds": [],
+    "missingRuleIds": []
+  },
+  "evidenceSummary": [
+    {
+      "evidenceId": "repository-metadata",
+      "classification": "OBSERVED",
+      "summary": "Fetched repository metadata for builder/judge-dapp.",
+      "repositoryFileOrUrl": "https://github.com/builder/judge-dapp"
+    }
+  ],
+  "subjectiveQuestions": [
+    {
+      "id": "genlayer-fit",
+      "prompt": "Does this submission materially benefit from decentralized adjudication rather than a single trusted server?",
+      "rationale": "GenLayer should only be used for a consensus-critical judgment, not decorative branding."
+    }
+  ],
+  "equivalencePrinciple": "Use normalized structured output with substantive validator checks over gate adherence, evidence grounding, rubric consistency, and unsupported claims rather than strict text equality.",
+  "requestLimits": {
+    "maxEvidenceItems": 10,
+    "maxEvidenceChars": 220,
+    "maxSubjectiveQuestions": 3,
+    "maxOutputChars": 1800
+  }
+}

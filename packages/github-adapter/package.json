@@ -1,0 +1,12 @@
+{
+  "name": "@genforge/github-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@genforge/domain": "file:../domain"
+  }
+}

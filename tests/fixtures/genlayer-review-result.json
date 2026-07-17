@@ -1,0 +1,20 @@
+{
+  "decision": "ACCEPT_FOR_SCORING",
+  "scores": {
+    "genlayer_fit": 4,
+    "contract_quality": 4,
+    "engineering": 3,
+    "frontend_ux": 3
+  },
+  "confidence": 0.76,
+  "summary": "The submission uses a bounded evidence package and leaves consensus-critical judgment to GenLayer.",
+  "strengths": [
+    "Deterministic gate preserved hard failures.",
+    "Evidence package is bounded and normalized."
+  ],
+  "findings": [],
+  "required_actions": [
+    "Run a live Studio-backed contract review before production judging."
+  ],
+  "manual_review_required": false
+}

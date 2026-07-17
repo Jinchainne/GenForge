@@ -1,0 +1,22 @@
+{
+  "name": "genforge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GenForge evaluates public GitHub submissions with deterministic evidence collection and GenLayer-native adjudication.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "format:genforge": "npm --prefix apps/web run format",
+    "lint:genforge": "npm --prefix apps/web run lint",
+    "typecheck:genforge": "npm --prefix apps/web run typecheck",
+    "test:genforge": "npm --prefix apps/web run test",
+    "build:genforge": "npm --prefix apps/web run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "npm@11.7.0",
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,84 @@
+# GenForge
+
+GenForge is a GenLayer-native project evaluation platform for public GitHub submissions.
+
+It performs a bounded review pipeline:
+
+1. Normalize a public `github.com` repository URL.
+2. Collect source evidence through the GitHub API without executing untrusted code.
+3. Apply deterministic gate rules.
+4. Build a bounded GenLayer review request.
+5. Submit the request to GenLayer when configured, or surface an explicit integration-unavailable state.
+6. Produce builder-facing findings, confidence factors, and accepted-submission ranking output.
+
+## Workspace
+
+- Web app: `apps/web`
+- Shared schemas: `packages/domain`
+- Evidence engine: `packages/evidence`
+- Deterministic rules: `packages/rules`
+- GitHub intake: `packages/github-adapter`
+- Confidence engine: `packages/confidence`
+- Evaluation helpers: `packages/evaluations`
+- GenLayer client boundary: `packages/genlayer-client`
+- Report generation: `packages/reports`
+- Intelligent Contract: `contracts/genforge_judge`
+- Fixtures: `tests/fixtures`
+
+## Run
+
+```bash
+npm install
+npm --prefix apps/web run dev
+```
+
+The app is served from `apps/web` and remains compatible with Vercel root-directory deployment.
+
+## Environment
+
+Required for GitHub intake:
+
+- `GITHUB_TOKEN` is optional but recommended for higher rate limits.
+
+Optional for live GenLayer submission:
+
+- `GENLAYER_MODE=sdk`
+- `GENLAYER_NETWORK`
+- `GENLAYER_CONTRACT_ADDRESS`
+- `GENLAYER_RPC_URL`
+
+Optional for explicit mock mode in local demos and tests:
+
+- `GENLAYER_MODE=mock`
+
+GenForge does not fabricate live GenLayer consensus when the integration is unavailable. If live configuration is missing, the UI reports `integration_unavailable` with explicit reasons.
+
+## Verification
+
+Commands used for this repository:
+
+```bash
+npm run lint:genforge
+npm run typecheck:genforge
+npm run test:genforge
+npm run build:genforge
+```
+
+## Official references verified on July 17, 2026
+
+- GenLayer tooling setup: `https://docs.genlayer.com/developers/intelligent-contracts/tooling-setup`
+- GenLayerJS docs: `https://docs.genlayer.com/api-references/genlayer-js`
+- Equivalence Principle docs: `https://docs.genlayer.com/developers/intelligent-contracts/equivalence-principle`
+- Official boilerplate repo: `https://github.com/genlayerlabs/genlayer-project-boilerplate`
+- Official boilerplate `package.json`: pins `genlayer-js` at `^1.1.8`
+- Official boilerplate `requirements.txt`:
+  - `genlayer-py @ git+https://github.com/genlayerlabs/genlayer-py@v0.18`
+  - `genlayer-test @ git+https://github.com/genlayerlabs/genlayer-testing-suite@v0.29`
+  - `genvm-linter @ git+https://github.com/genlayerlabs/genvm-linter@main`
+
+## Limitations
+
+- Public GitHub repositories only.
+- Repository source is inspected read-only through bounded API calls.
+- Studio and Explorer verification are still manual unless a live GenLayer environment is configured.
+- The included contract scaffold has not been deployed from this workspace.
