@@ -8,7 +8,8 @@ import { canRequestOnchainAdjudication } from "@/lib/review-workflow";
 export function OnchainReviewPanel({
   report,
   publicConfig,
-  configIssues,
+  walletConfigIssues,
+  submissionConfigIssues,
   wallet,
   onchain,
   busy,
@@ -18,7 +19,8 @@ export function OnchainReviewPanel({
 }: {
   report: ReviewReport;
   publicConfig: PublicGenLayerConfig;
-  configIssues: string[];
+  walletConfigIssues: string[];
+  submissionConfigIssues: string[];
   wallet: WalletConnectionState;
   onchain: OnchainWorkflowState;
   busy: boolean;
@@ -62,14 +64,24 @@ export function OnchainReviewPanel({
         </div>
       </dl>
 
-      {configIssues.length > 0 ? (
+      {walletConfigIssues.length > 0 ? (
         <div className="error-callout">
-          <strong>Public runtime config missing</strong>
+          <strong>Wallet connection config missing</strong>
           <ul className="stack-list compact-list">
-            {configIssues.map((issue) => (
+            {walletConfigIssues.map((issue) => (
               <li key={issue}>{issue}</li>
             ))}
           </ul>
+        </div>
+      ) : null}
+
+      {submissionConfigIssues.length > walletConfigIssues.length ? (
+        <div className="callout">
+          <strong>Submission config still incomplete</strong>
+          <p>
+            MetaMask can connect once the wallet runtime is available, but
+            on-chain submission still needs a deployed contract address.
+          </p>
         </div>
       ) : null}
 
@@ -99,7 +111,7 @@ export function OnchainReviewPanel({
             busy ||
             !canSubmit ||
             wallet.status !== "connected" ||
-            configIssues.length > 0
+            submissionConfigIssues.length > 0
           }
         >
           {onchain.status === "submitting"

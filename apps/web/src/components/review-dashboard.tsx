@@ -33,8 +33,9 @@ import {
   type WalletConnectionState,
 } from "@/lib/review-workflow";
 import {
-  getPublicConfigIssues,
   getPublicGenLayerConfig,
+  getSubmissionConfigIssues,
+  getWalletConfigIssues,
 } from "@/lib/public-genlayer-config";
 
 type DashboardState =
@@ -70,7 +71,8 @@ function mapErrorCode(code: ReviewErrorCode): DashboardState {
 
 export function ReviewDashboard() {
   const publicConfig = getPublicGenLayerConfig();
-  const configIssues = getPublicConfigIssues(publicConfig);
+  const walletConfigIssues = getWalletConfigIssues(publicConfig);
+  const submissionConfigIssues = getSubmissionConfigIssues(publicConfig);
   const [repositoryUrl, setRepositoryUrl] = useState("");
   const [state, setState] = useState<DashboardState>("idle");
   const [currentAttempt, setCurrentAttempt] = useState<ReviewAttempt | null>(
@@ -349,7 +351,8 @@ export function ReviewDashboard() {
               <OnchainReviewPanel
                 report={report}
                 publicConfig={publicConfig}
-                configIssues={configIssues}
+                walletConfigIssues={walletConfigIssues}
+                submissionConfigIssues={submissionConfigIssues}
                 wallet={wallet}
                 onchain={currentAttempt?.onchain ?? {
                   status: "idle",

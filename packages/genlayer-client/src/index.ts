@@ -202,9 +202,9 @@ async function createBrowserClients(config: BrowserGenLayerClientConfig): Promis
   writeClient: Record<string, unknown>;
   transactionStatus: Record<string, string>;
 }> {
-  if (!config.network || !config.contractAddress || !config.rpcUrl) {
+  if (!config.network || !config.rpcUrl) {
     throw new Error(
-      "NEXT_PUBLIC_GENLAYER_NETWORK, NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS, and NEXT_PUBLIC_GENLAYER_RPC_URL must be configured for browser wallet submission.",
+      "NEXT_PUBLIC_GENLAYER_NETWORK and NEXT_PUBLIC_GENLAYER_RPC_URL must be configured for browser wallet submission.",
     );
   }
 
@@ -384,6 +384,18 @@ export async function submitGenLayerReviewFromBrowser(
     });
   }
 
+  if (!config.contractAddress) {
+    return GenLayerExecutionResultSchema.parse({
+      status: "GENLAYER_NOT_CONFIGURED",
+      network: config.network,
+      contractAddress: config.contractAddress,
+      judgment: null,
+      errorClassification: "missing_configuration",
+      parserMessage:
+        "NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS must be configured before browser wallet submission can call review_submission.",
+    });
+  }
+
   try {
     const browserClients = await createBrowserClients(config);
     const writeContract = browserClients.writeClient.writeContract as
@@ -474,6 +486,18 @@ export async function trackGenLayerReviewTransaction(
   transactionHash: string,
   config: BrowserGenLayerClientConfig,
 ): Promise<GenLayerExecutionResult> {
+  if (!config.contractAddress) {
+    return GenLayerExecutionResultSchema.parse({
+      status: "GENLAYER_NOT_CONFIGURED",
+      network: config.network,
+      contractAddress: config.contractAddress,
+      judgment: null,
+      errorClassification: "missing_configuration",
+      parserMessage:
+        "NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS must be configured before transaction tracking can read review results.",
+    });
+  }
+
   try {
     const browserClients = await createBrowserClients(config);
     const waitForTransactionReceipt = browserClients.readClient
