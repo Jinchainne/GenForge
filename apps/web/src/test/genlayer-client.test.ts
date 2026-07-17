@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { submitGenLayerReview } from "@genforge/genlayer-client";
+import {
+  connectBrowserWallet,
+  submitGenLayerReview,
+  submitGenLayerReviewFromBrowser,
+  trackGenLayerReviewTransaction,
+} from "@genforge/genlayer-client";
 import type { GenLayerReviewRequest } from "@genforge/domain";
 
 const request: GenLayerReviewRequest = {
@@ -100,5 +105,132 @@ describe("submitGenLayerReview", () => {
     expect(result.status).toBe("CONSENSUS_ACCEPTED");
     expect(result.transactionHash).toBe("0xlivehash");
     expect(result.judgment?.summary).toContain("Live receipt");
+  });
+
+  it("connects a browser wallet and switches to the configured network", async () => {
+    const provider = {
+      request: async ({ method }: { method: string }) =>
+        method === "eth_requestAccounts"
+          ? ["0xabc0000000000000000000000000000000000000"]
+          : [],
+    };
+    let connectedNetwork = "";
+    const fakeSdk = {
+      createClient: (options: Record<string, unknown>) => ({
+        ...options,
+        connect: async (network: string) => {
+          connectedNetwork = network;
+        },
+      }),
+    };
+
+    const connection = await connectBrowserWallet({
+      network: "studionet",
+      contractAddress: "0x123",
+      rpcUrl: "https://rpc.example",
+      provider,
+      sdkOverride: fakeSdk,
+      chainsOverride: {
+        studionet: { id: 101, isStudio: true },
+      },
+      typesOverride: {
+        TransactionStatus: {
+          ACCEPTED: "ACCEPTED",
+          FINALIZED: "FINALIZED",
+        },
+      },
+    });
+
+    expect(connection.address).toBe("0xabc0000000000000000000000000000000000000");
+    expect(connectedNetwork).toBe("studionet");
+  });
+
+  it("submits through a browser wallet and returns a pending consensus state after acceptance", async () => {
+    const provider = {
+      request: async () => ["0xabc0000000000000000000000000000000000000"],
+    };
+    const fakeSdk = {
+      createClient: (options: Record<string, unknown>) => ({
+        ...options,
+        connect: async () => undefined,
+        writeContract: async () => "0xwallettx",
+        waitForTransactionReceipt: async () => ({
+          statusName: "ACCEPTED",
+          txExecutionResultName: "NOT_VOTED",
+        }),
+      }),
+    };
+
+    const result = await submitGenLayerReviewFromBrowser(request, {
+      network: "studionet",
+      contractAddress: "0x123",
+      rpcUrl: "https://rpc.example",
+      provider,
+      sdkOverride: fakeSdk,
+      chainsOverride: {
+        studionet: { id: 101, isStudio: true },
+      },
+      typesOverride: {
+        TransactionStatus: {
+          ACCEPTED: "ACCEPTED",
+          FINALIZED: "FINALIZED",
+        },
+      },
+    });
+
+    expect(result.status).toBe("CONSENSUS_PENDING");
+    expect(result.transactionHash).toBe("0xwallettx");
+  });
+
+  it("tracks a previously submitted transaction to a finalized judgment", async () => {
+    const provider = {
+      request: async () => ["0xabc0000000000000000000000000000000000000"],
+    };
+    const fakeSdk = {
+      createClient: (options: Record<string, unknown>) => ({
+        ...options,
+        connect: async () => undefined,
+        waitForTransactionReceipt: async () => ({
+          statusName: "FINALIZED",
+          txExecutionResultName: "FINISHED_WITH_RETURN",
+          result: JSON.stringify({
+            decision: "REJECT",
+            scores: {
+              genlayer_fit: 2,
+              contract_quality: 2,
+              engineering: 1,
+              frontend_ux: 1,
+            },
+            confidence: 0.61,
+            summary: "Consensus finalized with a rejection.",
+            strengths: [],
+            findings: ["The requested judgment rejected the submission."],
+            required_actions: ["Address the findings and resubmit."],
+            manual_review_required: true,
+          }),
+        }),
+        readContract: async () => null,
+      }),
+    };
+
+    const result = await trackGenLayerReviewTransaction(request, "0xwallettx", {
+      network: "studionet",
+      contractAddress: "0x123",
+      rpcUrl: "https://rpc.example",
+      provider,
+      sdkOverride: fakeSdk,
+      chainsOverride: {
+        studionet: { id: 101, isStudio: true },
+      },
+      typesOverride: {
+        TransactionStatus: {
+          ACCEPTED: "ACCEPTED",
+          FINALIZED: "FINALIZED",
+        },
+      },
+    });
+
+    expect(result.status).toBe("CONSENSUS_REJECTED");
+    expect(result.judgment?.summary).toContain("rejection");
   });
 });

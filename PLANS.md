@@ -14,11 +14,11 @@ GitHub submission
 
 ## Current phase
 
-1. Realign the workspace as a GenForge-first product and remove upstream OCR product identity from the runnable surface.
-2. Expand the shared domain model for review, confidence, ranking, and GenLayer transaction state.
-3. Add `packages/confidence`, `packages/evaluations`, `packages/genlayer-client`, and `contracts/genforge_judge`.
-4. Rewire `apps/web` so the UI and API expose the complete GenForge review flow.
-5. Verify with format, lint, typecheck, tests, and production build.
+1. Keep the deterministic GitHub intake and report pipeline as the read-only evidence stage.
+2. Add browser-wallet GenLayer submission helpers that follow the official MetaMask plus `client.connect()` pattern.
+3. Rewire `apps/web` into a workflow surface: detect issues, fix guidance, resubmit history, wallet connect, on-chain submit, and receipt refresh.
+4. Preserve the bounded-request contract flow and avoid claiming live success without a verified receipt.
+5. Verify with typecheck, tests, and production build after each UI and SDK slice.
 
 ## Constraints
 
@@ -27,6 +27,8 @@ GitHub submission
 - Treat README claims, screenshots, and UI labels as untrusted evidence.
 - Do not fabricate GenLayer consensus when the integration is not configured.
 - Use explicit mock mode for unit tests and local demos that do not have GenLayer configured.
+- Keep private keys out of the browser flow; wallet-signed writes must come from MetaMask or a compatible provider.
+- Do not present local browser session history as on-chain state.
 
 ## Phase 1 files
 
@@ -35,6 +37,7 @@ GitHub submission
 - `.gitignore`
 - `PLANS.md`
 - `apps/web/**/*`
+- `apps/web/.env.example`
 - `packages/domain/**/*`
 - `packages/evidence/**/*`
 - `packages/rules/**/*`

@@ -17,6 +17,25 @@ export interface GenLayerClientConfig {
   typesOverride?: Record<string, unknown>;
 }
 
+export interface BrowserWalletProvider {
+  request(args: { method: string; params?: unknown[] | object }): Promise<unknown>;
+}
+
+export interface BrowserGenLayerClientConfig
+  extends Omit<GenLayerClientConfig, "mode" | "privateKey"> {
+  provider?: BrowserWalletProvider;
+  walletAddress?: `0x${string}`;
+  waitIntervalMs?: number;
+  waitRetries?: number;
+}
+
+type SdkRuntime = {
+  createClient: (options: Record<string, unknown>) => Record<string, unknown>;
+  createAccount?: (privateKey?: `0x${string}`) => unknown;
+  transactionStatus: Record<string, string>;
+  chain: unknown;
+};
+
 function buildMockJudgment(request: GenLayerReviewRequest): GenLayerJudgment {
   const accepted = request.gate.decision === "ACCEPT_FOR_SCORING";
   const decision: Decision = accepted
@@ -111,6 +130,397 @@ function resolveChain(
   return sdkChains[network];
 }
 
+function resolveProvider(
+  provider?: BrowserWalletProvider,
+): BrowserWalletProvider | null {
+  if (provider) {
+    return provider;
+  }
+
+  if (
+    typeof window !== "undefined" &&
+    "ethereum" in window &&
+    window.ethereum &&
+    typeof window.ethereum === "object" &&
+    "request" in window.ethereum
+  ) {
+    return window.ethereum as BrowserWalletProvider;
+  }
+
+  return null;
+}
+
+async function loadSdkRuntime(
+  config: Pick<
+    GenLayerClientConfig,
+    "network" | "sdkOverride" | "chainsOverride" | "typesOverride"
+  >,
+): Promise<SdkRuntime> {
+  const sdk =
+    config.sdkOverride ??
+    ((await import("genlayer-js")) as unknown as Record<string, unknown>);
+  const sdkChains =
+    config.chainsOverride ??
+    ((await import("genlayer-js/chains")) as Record<string, unknown>);
+  const sdkTypes =
+    config.typesOverride ??
+    ((await import("genlayer-js/types")) as Record<string, unknown>);
+
+  const createClient = sdk.createClient as
+    | ((options: Record<string, unknown>) => Record<string, unknown>)
+    | undefined;
+  const createAccount = sdk.createAccount as
+    | ((privateKey?: `0x${string}`) => unknown)
+    | undefined;
+  const transactionStatus = sdkTypes.TransactionStatus as
+    | Record<string, string>
+    | undefined;
+  const chain = resolveChain(sdkChains, config.network);
+
+  if (!createClient || !transactionStatus) {
+    throw new Error(
+      "genlayer-js did not expose the expected createClient or TransactionStatus exports.",
+    );
+  }
+
+  if (!chain) {
+    throw new Error(`Unsupported GenLayer network "${config.network}".`);
+  }
+
+  return {
+    createClient,
+    createAccount,
+    transactionStatus,
+    chain,
+  };
+}
+
+async function createBrowserClients(config: BrowserGenLayerClientConfig): Promise<{
+  address: `0x${string}`;
+  provider: BrowserWalletProvider;
+  readClient: Record<string, unknown>;
+  writeClient: Record<string, unknown>;
+  transactionStatus: Record<string, string>;
+}> {
+  if (!config.network || !config.contractAddress || !config.rpcUrl) {
+    throw new Error(
+      "NEXT_PUBLIC_GENLAYER_NETWORK, NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS, and NEXT_PUBLIC_GENLAYER_RPC_URL must be configured for browser wallet submission.",
+    );
+  }
+
+  const provider = resolveProvider(config.provider);
+  if (!provider) {
+    throw new Error(
+      "No browser wallet provider was found. Install MetaMask or a compatible wallet.",
+    );
+  }
+
+  const runtime = await loadSdkRuntime(config);
+  const requestedAccounts = await provider.request({
+    method: config.walletAddress ? "eth_accounts" : "eth_requestAccounts",
+  });
+  const accounts = Array.isArray(requestedAccounts) ? requestedAccounts : [];
+  const address =
+    config.walletAddress ??
+    (typeof accounts[0] === "string"
+      ? (accounts[0] as `0x${string}`)
+      : undefined);
+
+  if (!address) {
+    throw new Error("No wallet account is currently connected.");
+  }
+
+  const readClient = runtime.createClient({
+    chain: runtime.chain,
+    endpoint: config.rpcUrl,
+  });
+  const writeClient = runtime.createClient({
+    chain: runtime.chain,
+    endpoint: config.rpcUrl,
+    account: address,
+    provider,
+  });
+
+  const connect = writeClient.connect as
+    | ((network: string) => Promise<unknown>)
+    | undefined;
+  if (connect && config.network) {
+    await connect(config.network);
+  }
+
+  return {
+    address,
+    provider,
+    readClient,
+    writeClient,
+    transactionStatus: runtime.transactionStatus,
+  };
+}
+
+function buildPendingResult(
+  request: GenLayerReviewRequest,
+  config: BrowserGenLayerClientConfig,
+  transactionHash: string,
+  receiptStatus: string,
+): GenLayerExecutionResult {
+  return GenLayerExecutionResultSchema.parse({
+    status: "CONSENSUS_PENDING",
+    network: config.network,
+    contractAddress: config.contractAddress,
+    transactionHash,
+    receiptStatus,
+    judgment: null,
+    parserMessage: `Transaction ${transactionHash} is accepted on ${request.repository.owner}/${request.repository.name}, but final validator agreement is still pending.`,
+  });
+}
+
+async function parseExecutionReceipt(input: {
+  request: GenLayerReviewRequest;
+  config: Pick<GenLayerClientConfig, "network" | "contractAddress">;
+  client: Record<string, unknown>;
+  receipt: Record<string, unknown>;
+  transactionHash: string;
+}): Promise<GenLayerExecutionResult> {
+  const receiptStatus = resolveReceiptStatus(input.receipt);
+  const txExecutionResultName =
+    typeof input.receipt.txExecutionResultName === "string"
+      ? input.receipt.txExecutionResultName
+      : undefined;
+
+  if (txExecutionResultName === "NOT_VOTED") {
+    return GenLayerExecutionResultSchema.parse({
+      status: "CONSENSUS_PENDING",
+      network: input.config.network,
+      contractAddress: input.config.contractAddress,
+      transactionHash: input.transactionHash,
+      receiptStatus,
+      judgment: null,
+      parserMessage:
+        "Consensus receipt is available, but execution result is still NOT_VOTED.",
+    });
+  }
+
+  if (txExecutionResultName === "FINISHED_WITH_ERROR") {
+    return GenLayerExecutionResultSchema.parse({
+      status: "TRANSACTION_FAILED",
+      network: input.config.network,
+      contractAddress: input.config.contractAddress,
+      transactionHash: input.transactionHash,
+      receiptStatus,
+      judgment: null,
+      errorClassification: "execution_failed",
+      parserMessage:
+        typeof input.receipt.result === "string"
+          ? input.receipt.result
+          : "Contract execution finished with error.",
+    });
+  }
+
+  let judgment: GenLayerJudgment | null = null;
+  try {
+    judgment = parseJudgmentPayload(input.receipt.result);
+  } catch {
+    judgment = await fallbackReadJudgment(
+      input.client,
+      input.config.contractAddress ?? "",
+      input.request.submissionId,
+    );
+  }
+
+  if (!judgment) {
+    return GenLayerExecutionResultSchema.parse({
+      status: "UNEXPECTED_RESULT",
+      network: input.config.network,
+      contractAddress: input.config.contractAddress,
+      transactionHash: input.transactionHash,
+      receiptStatus,
+      judgment: null,
+      errorClassification: "result_parse_failed",
+      parserMessage:
+        "Transaction completed, but no parseable judgment payload was returned.",
+    });
+  }
+
+  return GenLayerExecutionResultSchema.parse({
+    status:
+      judgment.decision === "ACCEPT_FOR_SCORING"
+        ? "CONSENSUS_ACCEPTED"
+        : "CONSENSUS_REJECTED",
+    network: input.config.network,
+    contractAddress: input.config.contractAddress,
+    transactionHash: input.transactionHash,
+    receiptStatus,
+    judgment,
+    parserMessage: "Live GenLayer receipt parsed successfully.",
+  });
+}
+
+export function isBrowserWalletAvailable(provider?: BrowserWalletProvider): boolean {
+  return resolveProvider(provider) !== null;
+}
+
+export async function connectBrowserWallet(
+  config: BrowserGenLayerClientConfig,
+): Promise<{ address: `0x${string}`; network: string }> {
+  const browserClients = await createBrowserClients(config);
+  return {
+    address: browserClients.address,
+    network: config.network ?? "unknown",
+  };
+}
+
+export async function submitGenLayerReviewFromBrowser(
+  request: GenLayerReviewRequest,
+  config: BrowserGenLayerClientConfig,
+): Promise<GenLayerExecutionResult> {
+  if (request.gate.decision !== "ACCEPT_FOR_SCORING") {
+    return GenLayerExecutionResultSchema.parse({
+      status: "SKIPPED_BY_GATE",
+      network: config.network,
+      contractAddress: config.contractAddress,
+      judgment: null,
+      parserMessage:
+        "Fix deterministic gate findings before asking MetaMask to submit the review on-chain.",
+    });
+  }
+
+  try {
+    const browserClients = await createBrowserClients(config);
+    const writeContract = browserClients.writeClient.writeContract as
+      | ((input: Record<string, unknown>) => Promise<unknown>)
+      | undefined;
+    const waitForTransactionReceipt = browserClients.readClient
+      .waitForTransactionReceipt as
+      | ((input: Record<string, unknown>) => Promise<unknown>)
+      | undefined;
+
+    if (!writeContract || !waitForTransactionReceipt) {
+      return GenLayerExecutionResultSchema.parse({
+        status: "GENLAYER_UNAVAILABLE",
+        network: config.network,
+        contractAddress: config.contractAddress,
+        judgment: null,
+        errorClassification: "sdk_method_missing",
+        parserMessage:
+          "Installed genlayer-js version does not expose the expected browser wallet methods.",
+      });
+    }
+
+    const transactionHash = (await writeContract({
+      address: config.contractAddress,
+      functionName: "review_submission",
+      args: [JSON.stringify(request)],
+      value: BigInt(0),
+    })) as string;
+
+    if (!transactionHash || typeof transactionHash !== "string") {
+      return GenLayerExecutionResultSchema.parse({
+        status: "UNEXPECTED_RESULT",
+        network: config.network,
+        contractAddress: config.contractAddress,
+        judgment: null,
+        errorClassification: "missing_transaction_hash",
+        parserMessage: "writeContract returned without a transaction hash.",
+      });
+    }
+
+    const acceptedReceipt = (await waitForTransactionReceipt({
+      hash: transactionHash,
+      status: browserClients.transactionStatus.ACCEPTED ?? "ACCEPTED",
+      fullTransaction: false,
+      interval: config.waitIntervalMs ?? 5000,
+      retries: config.waitRetries ?? 24,
+    })) as Record<string, unknown>;
+
+    const acceptedStatus = resolveReceiptStatus(acceptedReceipt);
+    if (acceptedStatus !== (browserClients.transactionStatus.FINALIZED ?? "FINALIZED")) {
+      return buildPendingResult(
+        request,
+        config,
+        transactionHash,
+        acceptedStatus,
+      );
+    }
+
+    return parseExecutionReceipt({
+      request,
+      config,
+      client: browserClients.readClient,
+      receipt: acceptedReceipt,
+      transactionHash,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error.";
+    const classification = /rejected|denied|insufficient|nonce/i.test(message)
+      ? "transaction_rejected"
+      : "sdk_call_failed";
+
+    return GenLayerExecutionResultSchema.parse({
+      status:
+        classification === "transaction_rejected"
+          ? "TRANSACTION_REJECTED"
+          : "GENLAYER_UNAVAILABLE",
+      network: config.network,
+      contractAddress: config.contractAddress,
+      judgment: null,
+      errorClassification: classification,
+      parserMessage: message,
+    });
+  }
+}
+
+export async function trackGenLayerReviewTransaction(
+  request: GenLayerReviewRequest,
+  transactionHash: string,
+  config: BrowserGenLayerClientConfig,
+): Promise<GenLayerExecutionResult> {
+  try {
+    const browserClients = await createBrowserClients(config);
+    const waitForTransactionReceipt = browserClients.readClient
+      .waitForTransactionReceipt as
+      | ((input: Record<string, unknown>) => Promise<unknown>)
+      | undefined;
+
+    if (!waitForTransactionReceipt) {
+      return GenLayerExecutionResultSchema.parse({
+        status: "GENLAYER_UNAVAILABLE",
+        network: config.network,
+        contractAddress: config.contractAddress,
+        judgment: null,
+        errorClassification: "sdk_method_missing",
+        parserMessage:
+          "Installed genlayer-js version does not expose waitForTransactionReceipt for transaction tracking.",
+      });
+    }
+
+    const finalizedReceipt = (await waitForTransactionReceipt({
+      hash: transactionHash,
+      status: browserClients.transactionStatus.FINALIZED ?? "FINALIZED",
+      fullTransaction: false,
+      interval: config.waitIntervalMs ?? 5000,
+      retries: config.waitRetries ?? 40,
+    })) as Record<string, unknown>;
+
+    return parseExecutionReceipt({
+      request,
+      config,
+      client: browserClients.readClient,
+      receipt: finalizedReceipt,
+      transactionHash,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error.";
+    return GenLayerExecutionResultSchema.parse({
+      status: "GENLAYER_UNAVAILABLE",
+      network: config.network,
+      contractAddress: config.contractAddress,
+      judgment: null,
+      errorClassification: "sdk_call_failed",
+      parserMessage: message,
+    });
+  }
+}
+
 export async function submitGenLayerReview(
   request: GenLayerReviewRequest,
   config: GenLayerClientConfig = {},
@@ -156,27 +566,9 @@ export async function submitGenLayerReview(
   }
 
   try {
-    const sdk =
-      config.sdkOverride ??
-      ((await import("genlayer-js")) as unknown as Record<string, unknown>);
-    const sdkChains =
-      config.chainsOverride ??
-      ((await import("genlayer-js/chains")) as Record<string, unknown>);
-    const sdkTypes =
-      config.typesOverride ??
-      ((await import("genlayer-js/types")) as Record<string, unknown>);
+    const runtime = await loadSdkRuntime(config);
 
-    const createClient = sdk.createClient as
-      | ((options: Record<string, unknown>) => Record<string, unknown>)
-      | undefined;
-    const createAccount = sdk.createAccount as
-      | ((privateKey?: `0x${string}`) => unknown)
-      | undefined;
-    const transactionStatus = sdkTypes.TransactionStatus as
-      | Record<string, string>
-      | undefined;
-
-    if (!createClient || !createAccount || !transactionStatus) {
+    if (!runtime.createAccount) {
       return GenLayerExecutionResultSchema.parse({
         status: "GENLAYER_UNAVAILABLE",
         network: config.network,
@@ -184,25 +576,13 @@ export async function submitGenLayerReview(
         judgment: null,
         errorClassification: "sdk_unavailable",
         parserMessage:
-          "genlayer-js did not expose the expected createClient, createAccount, or TransactionStatus exports.",
+          "genlayer-js did not expose the expected createAccount export.",
       });
     }
 
-    const chain = resolveChain(sdkChains, config.network);
-    if (!chain) {
-      return GenLayerExecutionResultSchema.parse({
-        status: "GENLAYER_NOT_CONFIGURED",
-        network: config.network,
-        contractAddress: config.contractAddress,
-        judgment: null,
-        errorClassification: "unknown_network",
-        parserMessage: `Unsupported GenLayer network "${config.network}".`,
-      });
-    }
-
-    const account = createAccount(config.privateKey);
-    const client = createClient({
-      chain,
+    const account = runtime.createAccount(config.privateKey);
+    const client = runtime.createClient({
+      chain: runtime.chain,
       endpoint: config.rpcUrl,
       account,
     });
@@ -245,81 +625,15 @@ export async function submitGenLayerReview(
 
     const receipt = (await waitForTransactionReceipt({
       hash: transactionHash,
-      status: transactionStatus.FINALIZED,
+      status: runtime.transactionStatus.FINALIZED,
       fullTransaction: false,
     })) as Record<string, unknown>;
-
-    const receiptStatus = resolveReceiptStatus(receipt);
-    const txExecutionResultName =
-      typeof receipt.txExecutionResultName === "string"
-        ? receipt.txExecutionResultName
-        : undefined;
-
-    if (txExecutionResultName === "NOT_VOTED") {
-      return GenLayerExecutionResultSchema.parse({
-        status: "CONSENSUS_PENDING",
-        network: config.network,
-        contractAddress: config.contractAddress,
-        transactionHash,
-        receiptStatus,
-        judgment: null,
-        parserMessage:
-          "Consensus finalized enough to fetch a receipt, but execution result is still NOT_VOTED.",
-      });
-    }
-
-    if (txExecutionResultName === "FINISHED_WITH_ERROR") {
-      return GenLayerExecutionResultSchema.parse({
-        status: "TRANSACTION_FAILED",
-        network: config.network,
-        contractAddress: config.contractAddress,
-        transactionHash,
-        receiptStatus,
-        judgment: null,
-        errorClassification: "execution_failed",
-        parserMessage:
-          typeof receipt.result === "string"
-            ? receipt.result
-            : "Contract execution finished with error.",
-      });
-    }
-
-    let judgment: GenLayerJudgment | null = null;
-    try {
-      judgment = parseJudgmentPayload(receipt.result);
-    } catch {
-      judgment = await fallbackReadJudgment(
-        client,
-        config.contractAddress,
-        request.submissionId,
-      );
-    }
-
-    if (!judgment) {
-      return GenLayerExecutionResultSchema.parse({
-        status: "UNEXPECTED_RESULT",
-        network: config.network,
-        contractAddress: config.contractAddress,
-        transactionHash,
-        receiptStatus,
-        judgment: null,
-        errorClassification: "result_parse_failed",
-        parserMessage:
-          "Transaction finalized, but no parseable judgment payload was available from the receipt or contract view.",
-      });
-    }
-
-    return GenLayerExecutionResultSchema.parse({
-      status:
-        judgment.decision === "ACCEPT_FOR_SCORING"
-          ? "CONSENSUS_ACCEPTED"
-          : "CONSENSUS_REJECTED",
-      network: config.network,
-      contractAddress: config.contractAddress,
+    return parseExecutionReceipt({
+      request,
+      config,
+      client,
+      receipt,
       transactionHash,
-      receiptStatus,
-      judgment,
-      parserMessage: "Live GenLayer receipt parsed successfully.",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error.";
