@@ -103,6 +103,14 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.workspace-subtitle {
+  max-width: 62ch;
+  margin: 18px 0 0;
+  color: var(--color-ink-soft);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
 .workspace-switcher {
   display: flex;
   flex-wrap: wrap;
@@ -128,6 +136,123 @@ button:disabled {
     var(--color-accent-strong)
   );
   color: var(--color-accent-ink);
+}
+
+.workspace-deck {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.workspace-hero-card {
+  background:
+    linear-gradient(145deg, var(--color-ink), color-mix(in oklab, var(--color-accent-strong) 72%, var(--color-ink))),
+    radial-gradient(circle at top right, var(--color-hero-glow), transparent 34%);
+  color: var(--color-hero-text);
+}
+
+.workspace-hero-card .eyebrow,
+.workspace-hero-card p {
+  color: color-mix(in oklab, var(--color-hero-text) 84%, transparent);
+}
+
+.workspace-hero-title {
+  margin: 10px 0 16px;
+  max-width: 12ch;
+  font-size: clamp(2rem, 1.6vw + 1.3rem, 3.8rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  overflow-wrap: anywhere;
+}
+
+.workspace-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.workspace-chip-row span {
+  padding: 10px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in oklab, var(--color-hero-text) 22%, transparent);
+  background: color-mix(in oklab, var(--color-hero-text) 10%, transparent);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.workspace-registry-card {
+  align-self: stretch;
+}
+
+.registry-list {
+  display: grid;
+  gap: 12px;
+}
+
+.registry-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--color-panel-strong);
+  border: 1px solid var(--color-rule);
+}
+
+.registry-item strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.registry-item p {
+  margin: 0;
+  color: var(--color-ink-soft);
+  line-height: 1.45;
+}
+
+.registry-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.registry-ready {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.registry-blocked,
+.registry-needs-env {
+  background: color-mix(in oklab, var(--color-warn) 14%, transparent);
+  color: var(--color-warn);
+}
+
+.workspace-capability-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.capability-card h3 {
+  margin: 8px 0 10px;
+  font-size: 1.35rem;
+  line-height: 1.05;
+}
+
+.capability-card p {
+  margin: 0;
+  color: var(--color-ink-soft);
+  line-height: 1.5;
 }
 
 .submission-layout {
@@ -630,7 +755,9 @@ button:disabled {
 
 @media (max-width: 1024px) {
   .submission-layout,
-  .content-grid {
+  .content-grid,
+  .workspace-deck,
+  .workspace-capability-grid {
     grid-template-columns: 1fr;
   }
 
@@ -650,6 +777,10 @@ button:disabled {
 
   .workspace-switcher {
     justify-content: start;
+  }
+
+  .workspace-hero-title {
+    max-width: 14ch;
   }
 
   .field-grid {
@@ -683,6 +814,10 @@ button:disabled {
 
   .panel-header span {
     white-space: nowrap;
+  }
+
+  .registry-item {
+    grid-template-columns: 1fr;
   }
 
   .submission-panel h1 {
