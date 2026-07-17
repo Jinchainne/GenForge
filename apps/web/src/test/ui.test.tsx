@@ -12,6 +12,9 @@ describe("WorkspaceShell", () => {
     expect(
       screen.getByRole("button", { name: "Enterprise Dispute" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Contract Ops" }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Case title")).toBeInTheDocument();
     expect(screen.getByText("Generate Enterprise Dossier")).toBeInTheDocument();
   });

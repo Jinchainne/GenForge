@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ReviewDashboard } from "./review-dashboard";
 import { EnterpriseDisputeDashboard } from "./enterprise-dispute-dashboard";
+import { ContractOpsDashboard } from "./contract-ops-dashboard";
 import {
   getDisputeSubmissionConfigIssues,
   getPublicGenLayerConfig,
@@ -10,7 +11,7 @@ import {
   getWalletConfigIssues,
 } from "@/lib/public-genlayer-config";
 
-type Workspace = "repo_review" | "enterprise_dispute";
+type Workspace = "repo_review" | "enterprise_dispute" | "contract_ops";
 
 const capabilityCards = [
   {
@@ -30,6 +31,12 @@ const capabilityCards = [
     title: "Audit Trail",
     summary:
       "Operational history, readiness state, and export-ready evidence boundaries for commercial review teams.",
+  },
+  {
+    id: "ops",
+    title: "Contract Ops",
+    summary:
+      "Real CLI status, deploy blockers, public runtime envs, and operator deployment commands for GenLayer contracts.",
   },
 ];
 
@@ -96,6 +103,13 @@ export function WorkspaceShell() {
           >
             Repository Review
           </button>
+          <button
+            type="button"
+            className={workspace === "contract_ops" ? "workspace-tab workspace-tab-active" : "workspace-tab"}
+            onClick={() => setWorkspace("contract_ops")}
+          >
+            Contract Ops
+          </button>
         </div>
       </header>
 
@@ -152,11 +166,9 @@ export function WorkspaceShell() {
         ))}
       </section>
 
-      {workspace === "enterprise_dispute" ? (
-        <EnterpriseDisputeDashboard />
-      ) : (
-        <ReviewDashboard />
-      )}
+      {workspace === "enterprise_dispute" ? <EnterpriseDisputeDashboard /> : null}
+      {workspace === "repo_review" ? <ReviewDashboard /> : null}
+      {workspace === "contract_ops" ? <ContractOpsDashboard /> : null}
     </main>
   );
 }
