@@ -24,6 +24,12 @@ import type { WalletConnectionState } from "@/lib/review-workflow";
 const defaultEvidence = `Signed contract section covering delivery or service scope
 Invoice or purchase order associated with the disputed milestone
 Email or notice showing the counterparty's disputed position`;
+const defaultFilingDate = new Date().toISOString().slice(0, 10);
+const defaultTargetResolutionDate = new Date(
+  Date.now() + 1000 * 60 * 60 * 24 * 7,
+)
+  .toISOString()
+  .slice(0, 10);
 
 export function EnterpriseDisputeDashboard() {
   const publicConfig = getPublicGenLayerConfig();
@@ -34,18 +40,24 @@ export function EnterpriseDisputeDashboard() {
   const [form, setForm] = useState({
     caseTitle: "Terminal turnaround delay dispute",
     disputeType: "logistics",
+    priority: "critical",
     claimantName: "OceanBridge Logistics Ltd.",
     respondentName: "Northport Container Services",
     contractReference: "MSA-2026-044 / Appendix B / SLA section 3.2",
+    jurisdiction: "Singapore arbitration clause with port-operator commercial notice requirements",
     claimSummary:
       "The claimant alleges that the respondent caused avoidable berth and container handoff delays, triggering detention costs and missing the contractual turnaround SLA for two consecutive sailings.",
     respondentPosition:
       "The respondent states that weather alerts, customs inspection holds, and a late trucking release from the claimant materially contributed to the delay and should qualify as exceptions under the service agreement.",
     requestedRemedy:
       "Allocate liability for detention and service credits, determine whether SLA exceptions apply, and recommend the payable adjustment.",
+    businessImpact:
+      "Repeated delay charges are affecting voyage margin, customer SLA performance, and executive reporting for a strategic shipping account.",
     governingTerms: "Service agreement, SLA appendix, force majeure and notice provisions",
     amountClaimed: "USD 185,000",
-    filingDate: new Date().toISOString().slice(0, 10),
+    filingDate: defaultFilingDate,
+    targetResolutionDate: defaultTargetResolutionDate,
+    counterpartyNoticeStatus: "ready_to_send",
     evidenceText: defaultEvidence,
   });
   const [report, setReport] = useState<EnterpriseDisputeReport | null>(null);
@@ -331,6 +343,43 @@ export function EnterpriseDisputeDashboard() {
             </select>
             <div className="field-grid">
               <div>
+                <label htmlFor="priority">Priority</label>
+                <select
+                  id="priority"
+                  className="dashboard-select"
+                  value={form.priority}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, priority: event.target.value }))
+                  }
+                >
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="counterparty-notice-status">Counterparty notice</label>
+                <select
+                  id="counterparty-notice-status"
+                  className="dashboard-select"
+                  value={form.counterpartyNoticeStatus}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      counterpartyNoticeStatus: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="draft_required">Draft required</option>
+                  <option value="ready_to_send">Ready to send</option>
+                  <option value="sent">Sent</option>
+                  <option value="response_received">Response received</option>
+                </select>
+              </div>
+            </div>
+            <div className="field-grid">
+              <div>
                 <label htmlFor="claimant-name">Claimant</label>
                 <input
                   id="claimant-name"
@@ -357,6 +406,14 @@ export function EnterpriseDisputeDashboard() {
               value={form.contractReference}
               onChange={(event) =>
                 setForm((current) => ({ ...current, contractReference: event.target.value }))
+              }
+            />
+            <label htmlFor="jurisdiction">Jurisdiction and forum</label>
+            <input
+              id="jurisdiction"
+              value={form.jurisdiction}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, jurisdiction: event.target.value }))
               }
             />
             <label htmlFor="claim-summary">Claim summary</label>
@@ -386,6 +443,15 @@ export function EnterpriseDisputeDashboard() {
                 setForm((current) => ({ ...current, requestedRemedy: event.target.value }))
               }
             />
+            <label htmlFor="business-impact">Business impact</label>
+            <textarea
+              id="business-impact"
+              className="dashboard-textarea"
+              value={form.businessImpact}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, businessImpact: event.target.value }))
+              }
+            />
             <div className="field-grid">
               <div>
                 <label htmlFor="governing-terms">Governing terms</label>
@@ -404,6 +470,33 @@ export function EnterpriseDisputeDashboard() {
                   value={form.amountClaimed}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, amountClaimed: event.target.value }))
+                  }
+                />
+              </div>
+            </div>
+            <div className="field-grid">
+              <div>
+                <label htmlFor="filing-date">Filing date</label>
+                <input
+                  id="filing-date"
+                  type="date"
+                  value={form.filingDate}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, filingDate: event.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label htmlFor="target-resolution-date">Target resolution date</label>
+                <input
+                  id="target-resolution-date"
+                  type="date"
+                  value={form.targetResolutionDate}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      targetResolutionDate: event.target.value,
+                    }))
                   }
                 />
               </div>
@@ -443,16 +536,16 @@ export function EnterpriseDisputeDashboard() {
                   <strong>{report.readiness.status}</strong>
                 </article>
                 <article className="score-card">
+                  <span>Priority</span>
+                  <strong>{report.priority}</strong>
+                </article>
+                <article className="score-card">
                   <span>Evidence items</span>
                   <strong>{report.evidencePack.length}</strong>
                 </article>
                 <article className="score-card">
                   <span>Open issues</span>
                   <strong>{report.issues.length}</strong>
-                </article>
-                <article className="score-card">
-                  <span>Program</span>
-                  <strong>v1</strong>
                 </article>
               </div>
             </section>
@@ -474,6 +567,10 @@ export function EnterpriseDisputeDashboard() {
                 <article className="workflow-step">
                   <strong>Dispute type</strong>
                   <p>{report.disputeType}</p>
+                </article>
+                <article className="workflow-step">
+                  <strong>Jurisdiction</strong>
+                  <p>{report.jurisdiction}</p>
                 </article>
               </div>
               <div className="field-grid">
@@ -557,6 +654,16 @@ export function EnterpriseDisputeDashboard() {
                   <p>{report.boundedRequest.amountClaimed || "Not specified"}</p>
                 </div>
               </div>
+              <div className="field-grid">
+                <div className="callout">
+                  <strong>Business impact</strong>
+                  <p>{report.boundedRequest.businessImpact}</p>
+                </div>
+                <div className="callout">
+                  <strong>Resolution target</strong>
+                  <p>{report.targetResolutionDate}</p>
+                </div>
+              </div>
               <div className="callout">
                 <strong>Claim summary</strong>
                 <p>{report.boundedRequest.claimSummary}</p>
@@ -597,6 +704,10 @@ export function EnterpriseDisputeDashboard() {
                 <div>
                   <dt>Dispute contract</dt>
                   <dd>{disputeContractAddress ?? "Not configured"}</dd>
+                </div>
+                <div>
+                  <dt>Queue status</dt>
+                  <dd>{report.commercialReadiness.queueStatus}</dd>
                 </div>
                 <div>
                   <dt>Studio</dt>
@@ -681,6 +792,15 @@ export function EnterpriseDisputeDashboard() {
                   <strong>Internal owner:</strong> {report.operatingModel.internalOwner}
                 </li>
                 <li>
+                  <strong>Escalation owner:</strong> {report.operatingModel.escalationOwner}
+                </li>
+                <li>
+                  <strong>Decision SLA:</strong> {report.operatingModel.decisionSla}
+                </li>
+                <li>
+                  <strong>Board visibility:</strong> {report.operatingModel.boardVisibility}
+                </li>
+                <li>
                   <strong>Counterparty channel:</strong> {report.operatingModel.counterpartyChannel}
                 </li>
                 <li>
@@ -699,6 +819,58 @@ export function EnterpriseDisputeDashboard() {
 
             <section className="panel">
               <div className="panel-header">
+                <h3>Commercial Control Tower</h3>
+                <span>{report.commercialReadiness.exposureBand}</span>
+              </div>
+              <div className="score-grid">
+                <article className="score-card">
+                  <span>Queue status</span>
+                  <strong>{report.commercialReadiness.queueStatus}</strong>
+                </article>
+                <article className="score-card">
+                  <span>Exposure band</span>
+                  <strong>{report.commercialReadiness.exposureBand}</strong>
+                </article>
+                <article className="score-card">
+                  <span>Payment ops</span>
+                  <strong>
+                    {report.commercialReadiness.paymentOpsReady ? "ready" : "pending"}
+                  </strong>
+                </article>
+                <article className="score-card">
+                  <span>Settlement</span>
+                  <strong>
+                    {report.commercialReadiness.settlementReady ? "ready" : "pending"}
+                  </strong>
+                </article>
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <h3>Counterparty Packet</h3>
+                <span>{report.counterpartyPacket.responseDeadline}</span>
+              </div>
+              <div className="callout">
+                <strong>Notice channel</strong>
+                <p>{report.counterpartyPacket.noticeChannel}</p>
+              </div>
+              <div className="callout">
+                <strong>Packet summary</strong>
+                <p>{report.counterpartyPacket.packetSummary}</p>
+              </div>
+              <div className="callout">
+                <strong>Included artifacts</strong>
+                <ul className="stack-list compact-list">
+                  {report.counterpartyPacket.includedArtifacts.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
                 <h3>Resolution Playbook</h3>
                 <span>{report.resolutionPlaybook.length}</span>
               </div>
@@ -707,6 +879,27 @@ export function EnterpriseDisputeDashboard() {
                   <li key={item}>{item}</li>
                 ))}
               </ul>
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <h3>Audit Trail</h3>
+                <span>{report.auditTrail.length} events</span>
+              </div>
+              <div className="history-list">
+                {report.auditTrail.map((entry) => (
+                  <article key={entry.id} className="history-item">
+                    <header>
+                      <div>
+                        <strong>{entry.actor}</strong>
+                        <p>{entry.action}</p>
+                      </div>
+                      <span>{entry.timestamp.slice(0, 10)}</span>
+                    </header>
+                    <p className="subtle">{entry.evidenceStatus}</p>
+                  </article>
+                ))}
+              </div>
             </section>
 
             {report.latestResolution ? (

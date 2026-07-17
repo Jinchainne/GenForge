@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
+  type CounterpartyPacket,
+  type DisputeAuditEvent,
   type EnterpriseDisputeReport,
   EnterpriseDisputeErrorSchema,
   EnterpriseDisputeSuccessSchema,
@@ -105,6 +107,7 @@ function buildReadiness(input: DisputeIntakeInput, issues: DisputeIssue[]) {
 }
 
 function buildOperatingModel(input: DisputeIntakeInput) {
+  const amountClaimed = input.amountClaimed ?? "";
   const owner =
     input.disputeType === "logistics"
       ? "Port operations and legal ops joint review"
@@ -116,6 +119,18 @@ function buildOperatingModel(input: DisputeIntakeInput) {
 
   return {
     internalOwner: owner,
+    escalationOwner:
+      input.priority === "critical"
+        ? "Regional general counsel and operating executive"
+        : "Legal ops manager and business-unit owner",
+    decisionSla:
+      input.priority === "critical"
+        ? "24-hour initial triage, 72-hour adjudication target"
+        : "48-hour initial triage, 5-business-day adjudication target",
+    boardVisibility:
+      input.priority === "critical" || /usd|eur|sgd|vnd|,000/i.test(amountClaimed)
+        ? "Escalate summary into executive reporting if exposure remains unresolved."
+        : "Business-unit reporting is sufficient unless the counterparty escalates.",
     counterpartyChannel:
       "Share the bounded evidence packet and requested remedy with the counterparty before validator escalation.",
     appealPath:
@@ -125,6 +140,82 @@ function buildOperatingModel(input: DisputeIntakeInput) {
       "Resolution memo",
       "Counterparty notice log",
       "Payment or service-credit instruction",
+    ],
+  };
+}
+
+function buildCommercialReadiness(input: DisputeIntakeInput, decision: "REJECT" | "REQUEST_MORE_INFO" | "ACCEPT_FOR_SCORING") {
+  const amountClaimed = input.amountClaimed ?? "";
+  const exposureBand =
+    input.priority === "critical" || /1\d{2},\d{3}|[2-9]\d{2},\d{3}/.test(amountClaimed)
+      ? "material"
+      : input.priority === "high"
+        ? "moderate"
+        : "contained";
+
+  const queueStatus =
+    decision === "ACCEPT_FOR_SCORING"
+      ? input.counterpartyNoticeStatus === "response_received"
+        ? "ready_for_onchain_submission"
+        : "awaiting_counterparty_notice"
+      : decision === "REQUEST_MORE_INFO"
+        ? "ready_for_internal_approval"
+        : "intake_in_progress";
+
+  return {
+    queueStatus,
+    exposureBand,
+    paymentOpsReady: decision === "ACCEPT_FOR_SCORING",
+    legalOpsReady: true,
+    counterpartyNoticeStatus: input.counterpartyNoticeStatus,
+    settlementReady: decision === "ACCEPT_FOR_SCORING",
+  } as const;
+}
+
+function buildAuditTrail(input: DisputeIntakeInput, decision: "REJECT" | "REQUEST_MORE_INFO" | "ACCEPT_FOR_SCORING"): DisputeAuditEvent[] {
+  return [
+    {
+      id: "audit-1",
+      timestamp: `${input.filingDate}T09:00:00.000Z`,
+      actor: "Business intake desk",
+      action: "Case opened and intake packet created.",
+      evidenceStatus: "Initial claimant submission captured.",
+    },
+    {
+      id: "audit-2",
+      timestamp: `${input.filingDate}T11:00:00.000Z`,
+      actor: "Legal ops triage",
+      action: "Deterministic readiness review completed.",
+      evidenceStatus:
+        decision === "ACCEPT_FOR_SCORING"
+          ? "Evidence packet met the bounded threshold for adjudication."
+          : "Evidence packet requires further completion before final escalation.",
+    },
+    {
+      id: "audit-3",
+      timestamp: new Date().toISOString(),
+      actor: "GenForge control surface",
+      action: "Enterprise dossier regenerated for adjudication planning.",
+      evidenceStatus: "Current bounded packet synchronized with workflow and wallet state.",
+    },
+  ];
+}
+
+function buildCounterpartyPacket(input: DisputeIntakeInput): CounterpartyPacket {
+  return {
+    noticeChannel:
+      input.disputeType === "logistics"
+        ? "Port operator escalation email plus contract notice channel"
+        : "Master agreement notice email and procurement/legal ticket",
+    responseDeadline: input.targetResolutionDate,
+    packetSummary:
+      "Redacted packet containing the contract anchor, claim summary, respondent position, requested remedy, and bounded evidence list.",
+    includedArtifacts: [
+      "Contract anchor extract",
+      "Claim chronology",
+      "Respondent rebuttal summary",
+      "Bounded evidence register",
+      "Requested remedy brief",
     ],
   };
 }
@@ -195,8 +286,11 @@ export async function generateEnterpriseDisputeReport(
       caseId,
       caseTitle: input.caseTitle,
       disputeType: input.disputeType,
+      priority: input.priority,
       decision,
       generatedAt: new Date().toISOString(),
+      jurisdiction: input.jurisdiction,
+      targetResolutionDate: input.targetResolutionDate,
       parties: {
         claimant: input.claimantName,
         respondent: input.respondentName,
@@ -212,10 +306,14 @@ export async function generateEnterpriseDisputeReport(
       issues,
       workflowTimeline: buildWorkflowTimeline(decision),
       operatingModel: buildOperatingModel(input),
+      commercialReadiness: buildCommercialReadiness(input, decision),
+      auditTrail: buildAuditTrail(input, decision),
+      counterpartyPacket: buildCounterpartyPacket(input),
       adjudicationQuestions,
       recommendedActions:
         decision === "ACCEPT_FOR_SCORING"
           ? [
+              "Send the counterparty packet through the notice channel and record delivery status.",
               "Connect MetaMask and submit the bounded dispute packet to the enterprise adjudication contract once deployed.",
               "Preserve the evidence chronology for manual appeal and audit review.",
             ]
@@ -236,17 +334,22 @@ export async function generateEnterpriseDisputeReport(
         caseId,
         program: "enterprise-dispute-adjudication-v1",
         disputeType: input.disputeType,
+        priority: input.priority,
         parties: {
           claimant: input.claimantName,
           respondent: input.respondentName,
         },
         contractReference: input.contractReference,
+        jurisdiction: input.jurisdiction,
         claimSummary: input.claimSummary,
         respondentPosition: input.respondentPosition,
         requestedRemedy: input.requestedRemedy,
+        businessImpact: input.businessImpact,
         governingTerms: input.governingTerms,
         amountClaimed: input.amountClaimed,
         filingDate: input.filingDate,
+        targetResolutionDate: input.targetResolutionDate,
+        counterpartyNoticeStatus: input.counterpartyNoticeStatus,
         evidenceSummary: evidencePack.map((item) => ({
           evidenceId: item.id,
           classification: item.classification,

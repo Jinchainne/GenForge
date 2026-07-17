@@ -14,18 +14,24 @@ describe("POST /api/disputes", () => {
         body: JSON.stringify({
           caseTitle: "Supplier delay charge dispute",
           disputeType: "services",
+          priority: "high",
           claimantName: "Alpha Manufacturing",
           respondentName: "Northwind Field Services",
           contractReference: "SLA-2026-09 section 2.4",
+          jurisdiction: "California venue under the master services agreement",
           claimSummary:
             "The claimant alleges repeated delayed service visits and missed remediation windows that triggered contractual service credits.",
           respondentPosition:
             "The respondent states that site access restrictions and delayed customer approvals materially contributed to the missed windows.",
           requestedRemedy:
             "Determine whether service credits apply and whether any exceptions reduce the payable amount.",
+          businessImpact:
+            "Missed remediation windows are affecting customer retention, revenue recognition, and support leadership reporting.",
           governingTerms: "Service agreement and service credit appendix",
           amountClaimed: "USD 48,000",
           filingDate: "2026-07-17",
+          targetResolutionDate: "2026-07-24",
+          counterpartyNoticeStatus: "response_received",
           evidenceItems: [
             "Signed SLA appendix describing remediation windows",
             "Ticket log showing four missed deadlines",
@@ -42,5 +48,9 @@ describe("POST /api/disputes", () => {
     expect(payload.report.boundedRequest.program).toBe(
       "enterprise-dispute-adjudication-v1",
     );
+    expect(payload.report.commercialReadiness.queueStatus).toBe(
+      "ready_for_onchain_submission",
+    );
+    expect(payload.report.auditTrail).toHaveLength(3);
   });
 });
