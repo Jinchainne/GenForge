@@ -1,14 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { EnterpriseDisputeReport, EnterpriseDisputeResponse } from "@/lib/dispute-domain";
 import {
   connectBrowserWallet,
   isBrowserWalletAvailable,
+  submitBrowserContractJson,
+  trackBrowserContractJsonTransaction,
 } from "@genforge/genlayer-client";
+import type { BrowserContractExecutionResult } from "@genforge/genlayer-client";
 import {
+  DisputeResolutionSchema,
+  type EnterpriseDisputeReport,
+  type EnterpriseDisputeResponse,
+  type DisputeResolution,
+} from "@/lib/dispute-domain";
+import {
+  getDisputeSubmissionConfigIssues,
   getPublicGenLayerConfig,
-  getSubmissionConfigIssues,
   getWalletConfigIssues,
 } from "@/lib/public-genlayer-config";
 import type { WalletConnectionState } from "@/lib/review-workflow";
@@ -20,7 +28,9 @@ Email or notice showing the counterparty's disputed position`;
 export function EnterpriseDisputeDashboard() {
   const publicConfig = getPublicGenLayerConfig();
   const walletConfigIssues = getWalletConfigIssues(publicConfig);
-  const submissionConfigIssues = getSubmissionConfigIssues(publicConfig);
+  const submissionConfigIssues = getDisputeSubmissionConfigIssues(publicConfig);
+  const disputeContractAddress =
+    publicConfig.disputeContractAddress ?? publicConfig.contractAddress;
   const [form, setForm] = useState({
     caseTitle: "Terminal turnaround delay dispute",
     disputeType: "logistics",
@@ -41,6 +51,16 @@ export function EnterpriseDisputeDashboard() {
   const [report, setReport] = useState<EnterpriseDisputeReport | null>(null);
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [onchainState, setOnchainState] = useState<{
+    status: "idle" | "submitting" | "tracking" | "finalized" | "failed";
+    message: string;
+    transactionHash?: string;
+    resolution?: DisputeResolution;
+  }>({
+    status: "idle",
+    message:
+      "Generate a dossier, connect MetaMask, then submit the dispute packet for validator adjudication.",
+  });
   const [wallet, setWallet] = useState<WalletConnectionState>({
     status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
     message: isBrowserWalletAvailable()
@@ -81,6 +101,13 @@ export function EnterpriseDisputeDashboard() {
       }
 
       setReport(payload.report);
+      setOnchainState({
+        status: "idle",
+        message:
+          payload.report.decision === "ACCEPT_FOR_SCORING"
+            ? "The dossier is ready for wallet-signed adjudication once the dispute contract path is configured."
+            : "Fix the dossier gaps before escalating the dispute on-chain.",
+      });
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Unexpected error.",
@@ -111,13 +138,134 @@ export function EnterpriseDisputeDashboard() {
         status: "connected",
         address: connection.address,
         network: connection.network,
-        message: `Wallet connected on ${connection.network}. Deploy the enterprise dispute contract to enable on-chain writes.`,
+        message: `Wallet connected on ${connection.network}. The enterprise dispute workflow can now prepare signed submissions.`,
       });
     } catch (error) {
       setWallet({
         status: "error",
         message:
           error instanceof Error ? error.message : "Failed to connect wallet.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function updateResolutionState(
+    execution: BrowserContractExecutionResult,
+    fallbackMessage: string,
+  ) {
+    const parsedResolution = DisputeResolutionSchema.safeParse(execution.result);
+    const resolution = parsedResolution.success
+      ? parsedResolution.data
+      : undefined;
+
+    if (resolution && report) {
+      setReport({
+        ...report,
+        latestResolution: resolution,
+      });
+    }
+
+    setOnchainState({
+      status:
+        execution.status === "CONSENSUS_PENDING"
+          ? "tracking"
+          : execution.status === "FINALIZED"
+            ? "finalized"
+            : "failed",
+      transactionHash: execution.transactionHash,
+      resolution,
+      message: execution.parserMessage ?? fallbackMessage,
+    });
+  }
+
+  async function handleSubmitOnchain() {
+    if (!report) {
+      return;
+    }
+
+    setBusy(true);
+    setErrorMessage(null);
+    setOnchainState({
+      status: "submitting",
+      message: "Submitting the bounded dispute packet to GenLayer...",
+    });
+
+    try {
+      const execution = await submitBrowserContractJson(
+        {
+          functionName: "resolve_dispute",
+          args: [JSON.stringify(report.boundedRequest)],
+          readback: {
+            functionName: "get_resolution_judgment",
+            args: [report.caseId],
+          },
+        },
+        {
+          network: publicConfig.network,
+          contractAddress: disputeContractAddress,
+          rpcUrl: publicConfig.rpcUrl,
+        },
+      );
+
+      updateResolutionState(
+        execution,
+        "Dispute submission completed without a structured parser message.",
+      );
+    } catch (error) {
+      setOnchainState({
+        status: "failed",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Dispute submission failed unexpectedly.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRefreshReceipt() {
+    if (!report || !onchainState.transactionHash) {
+      return;
+    }
+
+    setBusy(true);
+    setOnchainState((current) => ({
+      ...current,
+      status: "tracking",
+      message: "Refreshing validator receipt...",
+    }));
+
+    try {
+      const execution = await trackBrowserContractJsonTransaction(
+        onchainState.transactionHash,
+        {
+          readback: {
+            functionName: "get_resolution_judgment",
+            args: [report.caseId],
+          },
+        },
+        {
+          network: publicConfig.network,
+          contractAddress: disputeContractAddress,
+          rpcUrl: publicConfig.rpcUrl,
+        },
+      );
+
+      updateResolutionState(
+        execution,
+        "Receipt refresh completed without a structured parser message.",
+      );
+    } catch (error) {
+      setOnchainState({
+        status: "failed",
+        transactionHash: onchainState.transactionHash,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Receipt refresh failed unexpectedly.",
       });
     } finally {
       setBusy(false);
@@ -354,6 +502,24 @@ export function EnterpriseDisputeDashboard() {
 
             <section className="panel">
               <div className="panel-header">
+                <h3>Enterprise Workflow</h3>
+                <span>{report.workflowTimeline.length} steps</span>
+              </div>
+              <div className="workflow-grid">
+                {report.workflowTimeline.map((step) => (
+                  <article key={step.id} className="workflow-step">
+                    <strong>{step.label}</strong>
+                    <p>{step.summary}</p>
+                    <span className={`workflow-pill workflow-${step.status}`}>
+                      {step.status}
+                    </span>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
                 <h3>Enterprise Issues</h3>
                 <span>{report.issues.length}</span>
               </div>
@@ -380,6 +546,16 @@ export function EnterpriseDisputeDashboard() {
               <div className="panel-header">
                 <h3>Bounded Adjudication Packet</h3>
                 <span>{report.boundedRequest.program}</span>
+              </div>
+              <div className="field-grid">
+                <div className="callout">
+                  <strong>Contract anchor</strong>
+                  <p>{report.boundedRequest.contractReference}</p>
+                </div>
+                <div className="callout">
+                  <strong>Amount claimed</strong>
+                  <p>{report.boundedRequest.amountClaimed || "Not specified"}</p>
+                </div>
               </div>
               <div className="callout">
                 <strong>Claim summary</strong>
@@ -419,8 +595,8 @@ export function EnterpriseDisputeDashboard() {
                   <dd>{publicConfig.network ?? "Not configured"}</dd>
                 </div>
                 <div>
-                  <dt>RPC</dt>
-                  <dd>{publicConfig.rpcUrl ?? "Not configured"}</dd>
+                  <dt>Dispute contract</dt>
+                  <dd>{disputeContractAddress ?? "Not configured"}</dd>
                 </div>
                 <div>
                   <dt>Studio</dt>
@@ -460,16 +636,33 @@ export function EnterpriseDisputeDashboard() {
                 </button>
                 <button
                   type="button"
+                  onClick={handleSubmitOnchain}
                   disabled={
                     busy ||
+                    !report ||
+                    report.decision !== "ACCEPT_FOR_SCORING" ||
                     wallet.status !== "connected" ||
                     submissionConfigIssues.length > 0
                   }
                 >
                   Submit Dispute On-Chain
                 </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={handleRefreshReceipt}
+                  disabled={busy || !onchainState.transactionHash}
+                >
+                  Refresh Receipt
+                </button>
               </div>
               <p className="subtle">{wallet.message}</p>
+              <p className="subtle">{onchainState.message}</p>
+              {onchainState.transactionHash ? (
+                <p className="subtle">
+                  Transaction: {onchainState.transactionHash}
+                </p>
+              ) : null}
               {report.decision === "ACCEPT_FOR_SCORING" ? (
                 <p className="subtle">
                   The dispute packet is ready for blockchain adjudication as
@@ -477,6 +670,65 @@ export function EnterpriseDisputeDashboard() {
                 </p>
               ) : null}
             </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <h3>Operating Model</h3>
+                <span>Enterprise ready</span>
+              </div>
+              <ul className="stack-list">
+                <li>
+                  <strong>Internal owner:</strong> {report.operatingModel.internalOwner}
+                </li>
+                <li>
+                  <strong>Counterparty channel:</strong> {report.operatingModel.counterpartyChannel}
+                </li>
+                <li>
+                  <strong>Appeal path:</strong> {report.operatingModel.appealPath}
+                </li>
+              </ul>
+              <div className="callout">
+                <strong>Settlement artifacts</strong>
+                <ul className="stack-list compact-list">
+                  {report.operatingModel.settlementArtifacts.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <h3>Resolution Playbook</h3>
+                <span>{report.resolutionPlaybook.length}</span>
+              </div>
+              <ul className="stack-list">
+                {report.resolutionPlaybook.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </section>
+
+            {report.latestResolution ? (
+              <section className="panel">
+                <div className="panel-header">
+                  <h3>Latest On-Chain Resolution</h3>
+                  <span>{report.latestResolution.disposition}</span>
+                </div>
+                <div className="callout">
+                  <strong>Liability split</strong>
+                  <p>{report.latestResolution.liability_split}</p>
+                </div>
+                <div className="callout">
+                  <strong>Payable adjustment</strong>
+                  <p>{report.latestResolution.payable_adjustment}</p>
+                </div>
+                <div className="callout">
+                  <strong>Resolution summary</strong>
+                  <p>{report.latestResolution.resolution_summary}</p>
+                </div>
+              </section>
+            ) : null}
 
             <section className="panel">
               <div className="panel-header">

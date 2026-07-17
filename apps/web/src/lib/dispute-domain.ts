@@ -54,6 +54,41 @@ export const DisputeReadinessSchema = z.object({
   missingRequirements: z.array(z.string().min(1)),
 });
 
+export const DisputeTimelineStepSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  status: z.enum(["completed", "active", "pending"]),
+  summary: z.string().min(1),
+});
+
+export const DisputeOperatingModelSchema = z.object({
+  internalOwner: z.string().min(1),
+  counterpartyChannel: z.string().min(1),
+  appealPath: z.string().min(1),
+  settlementArtifacts: z.array(z.string().min(1)).min(1),
+});
+
+export const DisputeResolutionSchema = z.object({
+  disposition: z.enum([
+    "claim_upheld",
+    "claim_partially_upheld",
+    "claim_denied",
+    "request_more_information",
+  ]),
+  liability_split: z.enum([
+    "claimant",
+    "respondent",
+    "shared",
+    "undetermined",
+  ]),
+  payable_adjustment: z.string().min(1),
+  resolution_summary: z.string().min(1),
+  reasoning: z.array(z.string().min(1)),
+  required_actions: z.array(z.string().min(1)),
+  manual_review_required: z.boolean(),
+  confidence: z.number().min(0).max(1),
+});
+
 export const EnterpriseDisputeRequestSchema = z.object({
   caseId: z.string().min(1),
   program: z.literal("enterprise-dispute-adjudication-v1"),
@@ -66,6 +101,9 @@ export const EnterpriseDisputeRequestSchema = z.object({
   claimSummary: z.string().min(1),
   respondentPosition: z.string().min(1),
   requestedRemedy: z.string().min(1),
+  governingTerms: z.string().optional(),
+  amountClaimed: z.string().optional(),
+  filingDate: z.string().min(1),
   evidenceSummary: z.array(z.object({
     evidenceId: z.string().min(1),
     classification: z.enum(["OBSERVED", "MISSING"]),
@@ -93,10 +131,14 @@ export const EnterpriseDisputeReportSchema = z.object({
   readiness: DisputeReadinessSchema,
   evidencePack: z.array(DisputeEvidenceItemSchema),
   issues: z.array(DisputeIssueSchema),
+  workflowTimeline: z.array(DisputeTimelineStepSchema),
+  operatingModel: DisputeOperatingModelSchema,
   adjudicationQuestions: z.array(z.string().min(1)),
   recommendedActions: z.array(z.string().min(1)),
+  resolutionPlaybook: z.array(z.string().min(1)),
   boundedRequest: EnterpriseDisputeRequestSchema,
   genlayerResult: GenLayerExecutionResultSchema,
+  latestResolution: DisputeResolutionSchema.nullable().optional(),
 });
 
 export const EnterpriseDisputeSuccessSchema = z.object({
@@ -123,6 +165,9 @@ export type DisputeType = z.infer<typeof DisputeTypeSchema>;
 export type DisputeEvidenceItem = z.infer<typeof DisputeEvidenceItemSchema>;
 export type DisputeIssue = z.infer<typeof DisputeIssueSchema>;
 export type DisputeReadiness = z.infer<typeof DisputeReadinessSchema>;
+export type DisputeTimelineStep = z.infer<typeof DisputeTimelineStepSchema>;
+export type DisputeOperatingModel = z.infer<typeof DisputeOperatingModelSchema>;
+export type DisputeResolution = z.infer<typeof DisputeResolutionSchema>;
 export type EnterpriseDisputeRequest = z.infer<
   typeof EnterpriseDisputeRequestSchema
 >;

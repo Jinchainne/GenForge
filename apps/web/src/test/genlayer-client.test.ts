@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  submitBrowserContractJson,
   connectBrowserWallet,
   submitGenLayerReview,
   submitGenLayerReviewFromBrowser,
+  trackBrowserContractJsonTransaction,
   trackGenLayerReviewTransaction,
 } from "@genforge/genlayer-client";
 import type { GenLayerReviewRequest } from "@genforge/domain";
@@ -232,5 +234,108 @@ describe("submitGenLayerReview", () => {
 
     expect(result.status).toBe("CONSENSUS_REJECTED");
     expect(result.judgment?.summary).toContain("rejection");
+  });
+
+  it("submits a generic browser contract call and parses finalized JSON output", async () => {
+    const provider = {
+      request: async () => ["0xabc0000000000000000000000000000000000000"],
+    };
+    const fakeSdk = {
+      createClient: (options: Record<string, unknown>) => ({
+        ...options,
+        connect: async () => undefined,
+        writeContract: async () => "0xgeneric",
+        waitForTransactionReceipt: async () => ({
+          statusName: "FINALIZED",
+          txExecutionResultName: "FINISHED_WITH_RETURN",
+          result: JSON.stringify({
+            disposition: "claim_partially_upheld",
+            liability_split: "shared",
+          }),
+        }),
+      }),
+    };
+
+    const result = await submitBrowserContractJson(
+      {
+        functionName: "resolve_dispute",
+        args: ['{"caseId":"case-1"}'],
+      },
+      {
+        network: "studionet",
+        contractAddress: "0x123",
+        rpcUrl: "https://rpc.example",
+        provider,
+        sdkOverride: fakeSdk,
+        chainsOverride: {
+          studionet: { id: 101, isStudio: true },
+        },
+        typesOverride: {
+          TransactionStatus: {
+            ACCEPTED: "ACCEPTED",
+            FINALIZED: "FINALIZED",
+          },
+        },
+      },
+    );
+
+    expect(result.status).toBe("FINALIZED");
+    expect(result.transactionHash).toBe("0xgeneric");
+    expect(result.result).toMatchObject({
+      disposition: "claim_partially_upheld",
+    });
+  });
+
+  it("tracks a generic browser contract call via readback when receipt result is not parseable", async () => {
+    const provider = {
+      request: async () => ["0xabc0000000000000000000000000000000000000"],
+    };
+    const fakeSdk = {
+      createClient: (options: Record<string, unknown>) => ({
+        ...options,
+        connect: async () => undefined,
+        waitForTransactionReceipt: async () => ({
+          statusName: "FINALIZED",
+          txExecutionResultName: "FINISHED_WITH_RETURN",
+          result: undefined,
+        }),
+        readContract: async () =>
+          JSON.stringify({
+            disposition: "request_more_information",
+            liability_split: "undetermined",
+          }),
+      }),
+    };
+
+    const result = await trackBrowserContractJsonTransaction(
+      "0xgeneric",
+      {
+        readback: {
+          functionName: "get_resolution_judgment",
+          args: ["case-001"],
+        },
+      },
+      {
+        network: "studionet",
+        contractAddress: "0x123",
+        rpcUrl: "https://rpc.example",
+        provider,
+        sdkOverride: fakeSdk,
+        chainsOverride: {
+          studionet: { id: 101, isStudio: true },
+        },
+        typesOverride: {
+          TransactionStatus: {
+            ACCEPTED: "ACCEPTED",
+            FINALIZED: "FINALIZED",
+          },
+        },
+      },
+    );
+
+    expect(result.status).toBe("FINALIZED");
+    expect(result.result).toMatchObject({
+      disposition: "request_more_information",
+    });
   });
 });

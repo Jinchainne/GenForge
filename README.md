@@ -1,15 +1,18 @@
 # GenForge
 
-GenForge is a GenLayer-native project evaluation platform for public GitHub submissions.
+GenForge is a GenLayer-native adjudication platform for:
 
-It performs a bounded review pipeline:
+- public GitHub submission review
+- enterprise dispute intake and bilateral resolution
 
-1. Normalize a public `github.com` repository URL.
-2. Collect source evidence through the GitHub API without executing untrusted code.
-3. Apply deterministic gate rules.
-4. Build a bounded GenLayer review request.
-5. Submit the request to a live GenLayer contract when runtime secrets are configured, or surface an explicit integration-unavailable state.
-6. Produce builder-facing findings, confidence factors, and accepted-submission ranking output.
+It performs bounded pipelines:
+
+1. Repository review
+2. Enterprise dispute dossier generation
+3. Deterministic readiness and gate checks
+4. Bounded GenLayer request construction
+5. Wallet-signed submission to live GenLayer contracts when configured
+6. Builder-facing or enterprise-facing findings, confidence signals, and resolution artifacts
 
 ## Workspace
 
@@ -22,7 +25,7 @@ It performs a bounded review pipeline:
 - Evaluation helpers: `packages/evaluations`
 - GenLayer client boundary: `packages/genlayer-client`
 - Report generation: `packages/reports`
-- Intelligent Contract: `contracts/genforge_judge`
+- Intelligent Contracts: `contracts/genforge_judge`
 - Fixtures: `tests/fixtures`
 
 ## Run
@@ -48,6 +51,13 @@ Optional for live GenLayer submission:
 - `GENLAYER_RPC_URL`
 - `GENLAYER_PRIVATE_KEY`
 
+Optional for browser-wallet enterprise dispute submission:
+
+- `NEXT_PUBLIC_GENLAYER_NETWORK`
+- `NEXT_PUBLIC_GENLAYER_RPC_URL`
+- `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS`
+- `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`
+
 Optional for explicit mock mode in local demos and tests:
 
 - `GENLAYER_MODE=mock`
@@ -72,7 +82,7 @@ Recommended Vercel environment variables:
 - `GENLAYER_RPC_URL`
 - `GENLAYER_PRIVATE_KEY`
 
-The repository includes [apps/web/vercel.json](/abs/path/C:/Users/Asus/Desktop/genforge-submission/apps/web/vercel.json:1) to pin API max duration for the review route.
+The repository includes [apps/web/vercel.json](/abs/path/C:/Users/Asus/Desktop/genforge-submission/apps/web/vercel.json:1) to pin API max duration for the review and dispute routes.
 
 ## Contract tests
 
@@ -115,8 +125,9 @@ npm run build:genforge
 
 ## Limitations
 
-- Public GitHub repositories only.
+- Repository review remains limited to public GitHub repositories.
 - Repository source is inspected read-only through bounded API calls.
+- Live wallet writes still require deployed GenLayer contract addresses and funded accounts.
 - Studio and Explorer verification are still manual unless a live GenLayer environment is configured.
-- The included contract scaffold has not been deployed from this workspace.
-- Contract direct/integration tests were added, but live Studio-backed execution still depends on a local or hosted GenLayer environment plus Python dependencies from `contracts/genforge_judge/requirements.txt`.
+- The included contract scaffolds have not been deployed from this workspace because the available local accounts were unfunded on July 17, 2026.
+- Contract direct/integration tests exist for both review and enterprise dispute flows, but live Studio-backed execution still depends on a local or hosted GenLayer environment plus Python dependencies from `contracts/genforge_judge/requirements.txt`.

@@ -7,6 +7,7 @@ import {
   type DisputeIntakeInput,
   DisputeIntakeInputSchema,
   type DisputeIssue,
+  type DisputeTimelineStep,
 } from "./dispute-domain";
 
 function buildIssues(input: DisputeIntakeInput): DisputeIssue[] {
@@ -103,6 +104,65 @@ function buildReadiness(input: DisputeIntakeInput, issues: DisputeIssue[]) {
   } as const;
 }
 
+function buildOperatingModel(input: DisputeIntakeInput) {
+  const owner =
+    input.disputeType === "logistics"
+      ? "Port operations and legal ops joint review"
+      : input.disputeType === "procurement"
+        ? "Procurement operations with finance and legal escalation"
+        : input.disputeType === "services"
+          ? "Service delivery management with legal escalation"
+          : "Enterprise legal ops escalation team";
+
+  return {
+    internalOwner: owner,
+    counterpartyChannel:
+      "Share the bounded evidence packet and requested remedy with the counterparty before validator escalation.",
+    appealPath:
+      "If the validator-backed resolution is disputed, open a manual appeal with the preserved chronology and signed settlement memo.",
+    settlementArtifacts: [
+      "Bounded evidence export",
+      "Resolution memo",
+      "Counterparty notice log",
+      "Payment or service-credit instruction",
+    ],
+  };
+}
+
+function buildWorkflowTimeline(
+  decision: "REJECT" | "REQUEST_MORE_INFO" | "ACCEPT_FOR_SCORING",
+): DisputeTimelineStep[] {
+  return [
+    {
+      id: "intake",
+      label: "Intake captured",
+      status: "completed",
+      summary: "The claimant, respondent, requested remedy, and governing dispute context are structured.",
+    },
+    {
+      id: "readiness",
+      label: "Readiness triage",
+      status: "completed",
+      summary: "Deterministic checks evaluated evidence depth, bilateral positioning, and contract anchoring.",
+    },
+    {
+      id: "wallet",
+      label: "Wallet and contract path",
+      status: decision === "ACCEPT_FOR_SCORING" ? "active" : "pending",
+      summary:
+        decision === "ACCEPT_FOR_SCORING"
+          ? "The case is eligible for wallet-signed GenLayer submission once the dispute contract is configured."
+          : "On-chain escalation should wait until the dispute packet is complete enough for bounded adjudication.",
+    },
+    {
+      id: "settlement",
+      label: "Settlement execution",
+      status: "pending",
+      summary: "After consensus, convert the resolution into a settlement memo, payment instruction, or service-credit order.",
+    },
+  ];
+}
+
 export async function generateEnterpriseDisputeReport(
   body: unknown,
 ): Promise<EnterpriseDisputeResponse> {
@@ -150,6 +210,8 @@ export async function generateEnterpriseDisputeReport(
       readiness,
       evidencePack,
       issues,
+      workflowTimeline: buildWorkflowTimeline(decision),
+      operatingModel: buildOperatingModel(input),
       adjudicationQuestions,
       recommendedActions:
         decision === "ACCEPT_FOR_SCORING"
@@ -158,6 +220,18 @@ export async function generateEnterpriseDisputeReport(
               "Preserve the evidence chronology for manual appeal and audit review.",
             ]
           : issues.map((issue) => issue.action),
+      resolutionPlaybook:
+        decision === "ACCEPT_FOR_SCORING"
+          ? [
+              "Generate a validator-facing resolution packet with both party positions and the exact remedy question.",
+              "Submit the packet through a wallet-controlled enterprise dispute contract.",
+              "Track finality, then issue a settlement memo and payable adjustment instruction.",
+            ]
+          : [
+              "Close evidence gaps before blockchain escalation.",
+              "Reconfirm both party identities and the contractual anchor.",
+              "Resubmit the bounded packet after the dossier is complete.",
+            ],
       boundedRequest: {
         caseId,
         program: "enterprise-dispute-adjudication-v1",
@@ -170,6 +244,9 @@ export async function generateEnterpriseDisputeReport(
         claimSummary: input.claimSummary,
         respondentPosition: input.respondentPosition,
         requestedRemedy: input.requestedRemedy,
+        governingTerms: input.governingTerms,
+        amountClaimed: input.amountClaimed,
+        filingDate: input.filingDate,
         evidenceSummary: evidencePack.map((item) => ({
           evidenceId: item.id,
           classification: item.classification,

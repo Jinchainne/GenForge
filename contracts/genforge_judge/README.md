@@ -1,6 +1,9 @@
-# GenForge Judge Contract
+# GenForge Judge Contracts
 
-This contract is the consensus-critical judging layer for `genlayer-project-review-v1`.
+These contracts are the consensus-critical adjudication layer for:
+
+- `genlayer-project-review-v1`
+- `enterprise-dispute-adjudication-v1`
 
 Observed official references used on July 17, 2026:
 
@@ -14,9 +17,14 @@ Observed official references used on July 17, 2026:
 
 Implementation notes:
 
-- Consensus-critical decision: whether an accepted submission is genuinely GenLayer-native and how it should be scored.
-- Deterministic facts stay outside the contract and enter through the bounded gate payload.
-- The contract only reviews bounded normalized evidence; it never receives a full repository.
+- `review_submission.py`
+  - Consensus-critical decision: whether an accepted submission is genuinely GenLayer-native and how it should be scored.
+  - Deterministic facts stay outside the contract and enter through the bounded gate payload.
+  - The contract only reviews bounded normalized evidence; it never receives a full repository.
+- `resolve_enterprise_dispute.py`
+  - Consensus-critical decision: how a bilateral enterprise dispute should be resolved from a bounded evidence pack.
+  - The contract does not ingest raw enterprise data exhaustively; it receives a normalized packet prepared off-chain.
+  - The output is designed for settlement memos, service-credit orders, and appeal-ready chronology preservation.
 - Validator expectations follow a normalized structured output rather than strict text equality.
 
 ## Testing

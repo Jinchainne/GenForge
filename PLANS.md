@@ -61,7 +61,10 @@ Enterprise dispute intake
 
 - OBSERVED: `npm run lint:genforge` passed on July 17, 2026.
 - OBSERVED: `npm run typecheck:genforge` passed on July 17, 2026.
-- OBSERVED: `npm run test:genforge` passed with 30 tests on July 17, 2026.
+- OBSERVED: `npm run test:genforge` passed with 32 tests on July 17, 2026.
 - OBSERVED: `npm run build:genforge` passed on July 17, 2026.
+- OBSERVED: enterprise dispute contract scaffolding and integration test files were added on July 17, 2026.
+- MANUAL_REVIEW_REQUIRED: `npm run test:contract:direct` is currently blocked on this Windows host by a `gltest` temp-file `PermissionError` while replacing stdin, affecting both the existing review contract tests and the new dispute contract tests.
 - MISSING: a funded GenLayer deployment account for live contract deployment.
 - MISSING: production `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS` in Vercel.
+- MISSING: production `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS` in Vercel.

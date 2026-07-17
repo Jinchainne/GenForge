@@ -39,3 +39,57 @@ def build_request_payload(decision="ACCEPT_FOR_SCORING"):
             "maxOutputChars": 1800,
         },
     }
+
+
+def build_dispute_payload():
+    return {
+        "caseId": "case-001",
+        "program": "enterprise-dispute-adjudication-v1",
+        "disputeType": "logistics",
+        "parties": {
+            "claimant": "OceanBridge Logistics Ltd.",
+            "respondent": "Northport Container Services",
+        },
+        "contractReference": "MSA-2026-044 / Appendix B / SLA section 3.2",
+        "claimSummary": (
+            "The claimant alleges that the respondent caused avoidable berth and "
+            "container handoff delays, triggering detention costs and missing the "
+            "contractual turnaround SLA for two consecutive sailings."
+        ),
+        "respondentPosition": (
+            "The respondent states that weather alerts, customs inspection holds, "
+            "and a late trucking release from the claimant materially contributed "
+            "to the delay and should qualify as exceptions under the service agreement."
+        ),
+        "requestedRemedy": (
+            "Determine liability for detention charges, allocate service credits, "
+            "and recommend the payable adjustment."
+        ),
+        "evidenceSummary": [
+            {
+                "evidenceId": "evidence-1",
+                "classification": "OBSERVED",
+                "summary": "Signed SLA appendix describing turnaround obligations.",
+            },
+            {
+                "evidenceId": "evidence-2",
+                "classification": "OBSERVED",
+                "summary": "Port event log showing missed berth release windows.",
+            },
+            {
+                "evidenceId": "evidence-3",
+                "classification": "OBSERVED",
+                "summary": "Email thread disputing whether force majeure applies.",
+            },
+        ],
+        "adjudicationQuestions": [
+            "Did the claimant prove a contractual breach tied to the cited SLA?",
+            "Does the respondent evidence support a documented exception or shared fault defense?",
+            "What resolution best fits the bounded record and requested remedy?",
+        ],
+        "requestLimits": {
+            "maxEvidenceItems": 8,
+            "maxQuestionCount": 3,
+            "maxOutputChars": 2000,
+        },
+    }
