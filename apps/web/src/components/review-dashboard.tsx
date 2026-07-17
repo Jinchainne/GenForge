@@ -101,6 +101,11 @@ export function ReviewDashboard() {
             <h1>GenForge</h1>
             <span>AI-native engineering review for GenLayer</span>
           </div>
+          <div className="scope-strip" aria-label="Review scope">
+            <span>Deterministic gate</span>
+            <span>Bounded evidence</span>
+            <span>Live GenLayer path</span>
+          </div>
           <form className="submission-form" onSubmit={handleSubmit}>
             <label htmlFor="repository-url">Public GitHub repository URL</label>
             <input
@@ -153,7 +158,7 @@ export function ReviewDashboard() {
               <ListPanel
                 title="Missing Information"
                 items={report.missingInformation}
-                emptyMessage="No missing-information items were recorded for this preliminary pass."
+                emptyMessage="No missing-information items were recorded for this review."
               />
               <ListPanel
                 title="Manual Verification Queue"

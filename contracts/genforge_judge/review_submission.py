@@ -13,6 +13,7 @@ class StoredReview:
     decision: str
     summary: str
     confidence: float
+    raw_judgment_json: str
 
 
 class GenForgeJudge(gl.Contract):
@@ -21,22 +22,18 @@ class GenForgeJudge(gl.Contract):
     def __init__(self):
         pass
 
-    def _judge_submission(self, request_json: str) -> str:
-        request = json.loads(request_json)
-        gate_decision = request["gate"]["decision"]
-        evidence_count = len(request["evidenceSummary"])
-        question_count = len(request["subjectiveQuestions"])
-
-        def perform_review() -> str:
-            prompt = f"""
+    def _build_task(self, request: dict) -> str:
+        return f"""
 You are validating a bounded GenLayer project review request.
 
 Repository: {request["repository"]["owner"]}/{request["repository"]["name"]}
 Commit: {request["repository"]["commitSha"]}
 Program: {request["program"]}
-Deterministic gate decision: {gate_decision}
-Evidence count: {evidence_count}
-Subjective questions: {question_count}
+Deterministic gate decision: {request["gate"]["decision"]}
+Evidence summary:
+{json.dumps(request["evidenceSummary"], sort_keys=True)}
+Subjective questions:
+{json.dumps(request["subjectiveQuestions"], sort_keys=True)}
 
 Return only JSON with:
 {{
@@ -54,17 +51,49 @@ Return only JSON with:
   "required_actions": ["..."],
   "manual_review_required": true | false
 }}
+        """
 
-Rules:
-- Never return ACCEPT_FOR_SCORING if the deterministic gate was not ACCEPT_FOR_SCORING.
-- Ground findings in the provided evidence package only.
-- Do not invent repository behavior.
-- Use a normalized structure suitable for validator comparison.
-            """
-            result = gl.nondet.exec_prompt(prompt, response_format="json")
-            return json.dumps(result, sort_keys=True)
+    def _build_criteria(self, gate_decision: str) -> str:
+        return f"""
+The output must be valid JSON matching the requested keys.
+The decision must be one of REJECT, REQUEST_MORE_INFO, ACCEPT_FOR_SCORING.
+If deterministic gate decision is not ACCEPT_FOR_SCORING, the output must not be ACCEPT_FOR_SCORING.
+The summary and findings must be grounded in the bounded evidence package.
+The response must not invent repository behavior, deployment state, transactions, or scores unsupported by the input.
+The score fields must each be between 0 and 5.
+The confidence field must be between 0.0 and 1.0.
+Current deterministic gate decision: {gate_decision}.
+        """
 
-        return gl.eq_principle.strict_eq(perform_review)
+    def _judge_submission(self, request_json: str) -> str:
+        request = json.loads(request_json)
+        gate_decision = request["gate"]["decision"]
+        task = self._build_task(request)
+        criteria = self._build_criteria(gate_decision)
+
+        def get_input() -> str:
+            return request_json
+
+        review_output = gl.eq_principle.prompt_non_comparative(
+            get_input,
+            task=task,
+            criteria=criteria,
+        )
+
+        parsed = json.loads(review_output)
+        if gate_decision != "ACCEPT_FOR_SCORING":
+            parsed["decision"] = gate_decision
+            parsed["manual_review_required"] = True
+            parsed["required_actions"] = list(
+                set(
+                    parsed.get("required_actions", [])
+                    + [
+                        "Deterministic gate must pass before this submission can be scored.",
+                    ]
+                )
+            )
+
+        return json.dumps(parsed, sort_keys=True)
 
     @gl.public.write
     def review_submission(self, request: str) -> str:
@@ -77,6 +106,7 @@ Rules:
             decision=result["decision"],
             summary=result["summary"],
             confidence=float(result["confidence"]),
+            raw_judgment_json=result_json,
         )
         self.reviews[request_data["submissionId"]] = review
         return result_json
@@ -91,3 +121,7 @@ Rules:
             "summary": review.summary,
             "confidence": review.confidence,
         }
+
+    @gl.public.view
+    def get_review_judgment(self, submission_id: str) -> str:
+        return self.reviews[submission_id].raw_judgment_json

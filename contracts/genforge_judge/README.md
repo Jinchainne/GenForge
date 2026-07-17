@@ -18,3 +18,19 @@ Implementation notes:
 - Deterministic facts stay outside the contract and enter through the bounded gate payload.
 - The contract only reviews bounded normalized evidence; it never receives a full repository.
 - Validator expectations follow a normalized structured output rather than strict text equality.
+
+## Testing
+
+Direct tests:
+
+```bash
+python -m pytest tests/direct -v
+```
+
+Studio integration tests:
+
+```bash
+gltest tests/integration -v -s
+```
+
+The contract uses non-comparative equivalence for open-ended judgment so validators assess the leader output against criteria instead of requiring exact text equality.

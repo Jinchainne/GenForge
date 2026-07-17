@@ -35,6 +35,8 @@ bin/opencodereview
 /apps/web/.vercel
 /.codex
 /.genlayer-codex-kit
+__pycache__/
+*.pyc
 
 # Mac OS X
 .DS_Store

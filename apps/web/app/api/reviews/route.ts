@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { runPreliminaryRepositoryReview } from "@/lib/review-service";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -26,9 +27,18 @@ export async function POST(request: Request) {
     token: process.env.GITHUB_TOKEN,
     genlayer: {
       mode: process.env.GENLAYER_MODE === "mock" ? "mock" : "sdk",
-      network: process.env.GENLAYER_NETWORK,
+      network:
+        process.env.GENLAYER_NETWORK as
+          | "localnet"
+          | "studionet"
+          | "testnetAsimov"
+          | "testnetBradbury"
+          | undefined,
       contractAddress: process.env.GENLAYER_CONTRACT_ADDRESS,
       rpcUrl: process.env.GENLAYER_RPC_URL,
+      privateKey: process.env.GENLAYER_PRIVATE_KEY as
+        | `0x${string}`
+        | undefined,
     },
   });
 

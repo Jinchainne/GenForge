@@ -1,0 +1,1 @@
+EXPECTED_ACCEPTED_REPOSITORY_SLUG = "builder/judge-dapp"

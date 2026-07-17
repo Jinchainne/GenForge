@@ -12,7 +12,10 @@
     "lint:genforge": "npm --prefix apps/web run lint",
     "typecheck:genforge": "npm --prefix apps/web run typecheck",
     "test:genforge": "npm --prefix apps/web run test",
-    "build:genforge": "npm --prefix apps/web run build"
+    "build:genforge": "npm --prefix apps/web run build",
+    "lint:contract": "genvm-lint check contracts/genforge_judge/review_submission.py",
+    "test:contract:direct": "python -m pytest tests/direct -v",
+    "test:contract:integration": "gltest tests/integration -v -s"
   },
   "engines": {
     "node": ">=20"

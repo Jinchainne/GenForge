@@ -1,0 +1,16 @@
+networks:
+  default: localnet
+
+  localnet:
+    url: "http://127.0.0.1:4000/api"
+
+  studionet: {}
+
+  testnet_bradbury:
+    accounts:
+      - "${GENLAYER_PRIVATE_KEY}"
+
+paths:
+  contracts: "contracts/genforge_judge"
+
+environment: .env

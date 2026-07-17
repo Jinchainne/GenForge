@@ -55,7 +55,7 @@ const stateCopy: Record<string, { title: string; body: string }> = {
   },
   error: {
     title: "Review Error",
-    body: "GenForge could not complete the preliminary repository review.",
+    body: "GenForge could not complete the GenLayer project review.",
   },
 };
 
@@ -89,7 +89,7 @@ export function ProgressPanel({
 
   return (
     <section className="panel hero-panel">
-      <div className="eyebrow">Preliminary Repository Review</div>
+      <div className="eyebrow">GenLayer Project Review</div>
       <h2>{copy.title}</h2>
       <p>{copy.body}</p>
       <div className="status-rail" aria-label="Review phases">
