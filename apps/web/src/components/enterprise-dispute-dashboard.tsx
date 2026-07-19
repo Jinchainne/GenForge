@@ -238,6 +238,7 @@ export function EnterpriseDisputeDashboard({
           network: publicConfig.network,
           contractAddress: disputeContractAddress,
           rpcUrl: publicConfig.rpcUrl,
+          walletAddress: wallet.address as `0x${string}` | undefined,
         },
       );
 
@@ -283,6 +284,7 @@ export function EnterpriseDisputeDashboard({
           network: publicConfig.network,
           contractAddress: disputeContractAddress,
           rpcUrl: publicConfig.rpcUrl,
+          walletAddress: wallet.address as `0x${string}` | undefined,
         },
       );
 

@@ -66,7 +66,7 @@ type SdkRuntime = {
   createClient: (options: Record<string, unknown>) => Record<string, unknown>;
   createAccount?: (privateKey?: `0x${string}`) => unknown;
   transactionStatus: Record<string, string>;
-  chain: unknown;
+  chain: Record<string, unknown>;
 };
 
 function buildMockJudgment(request: GenLayerReviewRequest): GenLayerJudgment {
@@ -225,6 +225,80 @@ function resolveProvider(
   return null;
 }
 
+function hasProviderMethodError(error: unknown, method: string): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return (
+    message.includes(method) ||
+    message.includes("Unsupported method") ||
+    message.includes("doesn't have corresponding handler") ||
+    message.includes("not supported")
+  );
+}
+
+async function switchBrowserWalletNetwork(input: {
+  provider: BrowserWalletProvider;
+  chain: Record<string, unknown>;
+}): Promise<void> {
+  const chainId = input.chain.id;
+  if (typeof chainId !== "number") {
+    return;
+  }
+
+  const expectedChainId = `0x${chainId.toString(16)}`;
+  let currentChainId: unknown;
+  try {
+    currentChainId = await input.provider.request({ method: "eth_chainId" });
+  } catch (error) {
+    if (hasProviderMethodError(error, "eth_chainId")) {
+      return;
+    }
+    throw error;
+  }
+
+  if (currentChainId === expectedChainId) {
+    return;
+  }
+
+  const rpcUrls = input.chain.rpcUrls as
+    | { default?: { http?: string[] } }
+    | undefined;
+  const nativeCurrency = input.chain.nativeCurrency as
+    | Record<string, unknown>
+    | undefined;
+  const blockExplorers = input.chain.blockExplorers as
+    | { default?: { url?: string } }
+    | undefined;
+
+  try {
+    await input.provider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: expectedChainId }],
+    });
+  } catch {
+    await input.provider.request({
+      method: "wallet_addEthereumChain",
+      params: [
+        {
+          chainId: expectedChainId,
+          chainName:
+            typeof input.chain.name === "string"
+              ? input.chain.name
+              : "GenLayer Network",
+          rpcUrls: rpcUrls?.default?.http ?? [],
+          nativeCurrency,
+          blockExplorerUrls: blockExplorers?.default?.url
+            ? [blockExplorers.default.url]
+            : undefined,
+        },
+      ],
+    });
+    await input.provider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: expectedChainId }],
+    });
+  }
+}
+
 export function getBrowserWalletLabel(provider?: BrowserWalletProvider): string {
   const resolvedProvider = resolveProvider(provider);
   if (!resolvedProvider) {
@@ -286,7 +360,7 @@ async function loadSdkRuntime(
     createClient,
     createAccount,
     transactionStatus,
-    chain,
+    chain: chain as Record<string, unknown>,
   };
 }
 
@@ -336,12 +410,10 @@ async function createBrowserClients(config: BrowserGenLayerClientConfig): Promis
     provider,
   });
 
-  const connect = writeClient.connect as
-    | ((network: string) => Promise<unknown>)
-    | undefined;
-  if (connect && config.network) {
-    await connect(config.network);
-  }
+  await switchBrowserWalletNetwork({
+    provider,
+    chain: runtime.chain,
+  });
 
   return {
     address,

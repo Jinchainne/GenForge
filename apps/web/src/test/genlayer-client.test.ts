@@ -111,21 +111,33 @@ describe("submitGenLayerReview", () => {
     expect(result.judgment?.summary).toContain("Live receipt");
   });
 
-  it("connects a browser wallet and switches to the configured network", async () => {
+  it("connects a browser wallet and switches network without requiring wallet snaps", async () => {
+    const methods: string[] = [];
     const provider = {
-      request: async ({ method }: { method: string }) =>
-        method === "eth_requestAccounts"
-          ? ["0xabc0000000000000000000000000000000000000"]
-          : [],
+      request: async ({ method }: { method: string }) => {
+        methods.push(method);
+        if (method === "wallet_getSnaps") {
+          throw new Error("wallet_getSnaps doesn't have corresponding handler");
+        }
+        if (method === "eth_requestAccounts") {
+          return ["0xabc0000000000000000000000000000000000000"];
+        }
+        if (method === "eth_chainId") {
+          return "0x1";
+        }
+        return null;
+      },
     };
-    let connectedNetwork = "";
+    const createdClients: Array<Record<string, unknown>> = [];
     const fakeSdk = {
-      createClient: (options: Record<string, unknown>) => ({
-        ...options,
-        connect: async (network: string) => {
-          connectedNetwork = network;
-        },
-      }),
+      createClient: (options: Record<string, unknown>) => {
+        createdClients.push(options);
+        return {
+          ...options,
+          writeContract: async () => "0xhash",
+          waitForTransactionReceipt: async () => ({ statusName: "ACCEPTED" }),
+        };
+      },
     };
 
     const connection = await connectBrowserWallet({
@@ -135,7 +147,13 @@ describe("submitGenLayerReview", () => {
       provider,
       sdkOverride: fakeSdk,
       chainsOverride: {
-        studionet: { id: 101, isStudio: true },
+        studionet: {
+          id: 61999,
+          isStudio: true,
+          name: "GenLayer Studio Network",
+          rpcUrls: { default: { http: ["https://rpc.example"] } },
+          nativeCurrency: { name: "GEN Token", symbol: "GEN", decimals: 18 },
+        },
       },
       typesOverride: {
         TransactionStatus: {
@@ -146,7 +164,12 @@ describe("submitGenLayerReview", () => {
     });
 
     expect(connection.address).toBe("0xabc0000000000000000000000000000000000000");
-    expect(connectedNetwork).toBe("studionet");
+    expect(methods).toContain("wallet_switchEthereumChain");
+    expect(methods).not.toContain("wallet_getSnaps");
+    expect(createdClients[1]).toMatchObject({
+      account: "0xabc0000000000000000000000000000000000000",
+      provider,
+    });
   });
 
   it("labels common wallet providers without requiring MetaMask", () => {
