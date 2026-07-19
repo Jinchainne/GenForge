@@ -25,6 +25,10 @@ Implementation notes:
   - Consensus-critical decision: how a bilateral enterprise dispute should be resolved from a bounded evidence pack.
   - The contract does not ingest raw enterprise data exhaustively; it receives a normalized packet prepared off-chain.
   - The output is designed for settlement memos, service-credit orders, and appeal-ready chronology preservation.
+- `deploy_project_token.py`
+  - Records wallet-signed project token launch requests through a GenLayer contract.
+  - Stores deployment metadata by `deploymentId` and exposes `get_token_deployment_json` for browser readback.
+  - The frontend must point `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS` to the deployed address before Token Launch can submit.
 - Validator expectations follow a normalized structured output rather than strict text equality.
 
 ## Testing

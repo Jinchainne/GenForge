@@ -93,3 +93,19 @@ def build_dispute_payload():
             "maxOutputChars": 2000,
         },
     }
+
+
+def build_token_payload():
+    return {
+        "deploymentId": "token-gfrc-genforge-builder-track",
+        "projectName": "GenForge Builder Track",
+        "tokenName": "GenForge Review Credit",
+        "tokenSymbol": "GFRC",
+        "initialSupply": "1000000",
+        "decimals": 18,
+        "recipient": "0x6bc7040ec2ae31c419f9c3af0b9494c4d7745c5d",
+        "purpose": (
+            "Reward accepted GenLayer builder submissions after deterministic "
+            "evidence and validator review."
+        ),
+    }

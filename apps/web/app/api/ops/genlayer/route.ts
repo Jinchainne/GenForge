@@ -34,7 +34,9 @@ export async function POST(request: Request) {
     body &&
     typeof body === "object" &&
     "contract" in body &&
-    (body.contract === "review" || body.contract === "dispute")
+    (body.contract === "review" ||
+      body.contract === "dispute" ||
+      body.contract === "token_factory")
       ? body.contract
       : null;
 
@@ -44,7 +46,8 @@ export async function POST(request: Request) {
         ok: false,
         error: {
           code: "INVALID_CONTRACT_TARGET",
-          message: 'Body must include contract: "review" or "dispute".',
+          message:
+            'Body must include contract: "review", "dispute", or "token_factory".',
         },
       },
       { status: 400 },

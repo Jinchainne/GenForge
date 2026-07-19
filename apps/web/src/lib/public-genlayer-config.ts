@@ -23,7 +23,8 @@ const publicConfig: PublicGenLayerConfig = {
   tokenFactoryMethod:
     process.env.NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD ?? "deploy_token",
   tokenFactoryReadbackMethod:
-    process.env.NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD,
+    process.env.NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD ??
+    "get_token_deployment_json",
   rpcUrl:
     process.env.NEXT_PUBLIC_GENLAYER_RPC_URL ??
     "https://studio.genlayer.com/api",

@@ -111,7 +111,7 @@ Observed production constraint on July 17, 2026:
 2. Run `genlayer network studionet` or the intended target network.
 3. Deploy `contracts/genforge_judge/review_submission.py`.
 4. Deploy `contracts/genforge_judge/resolve_enterprise_dispute.py`.
-5. Deploy or configure the GenLayer token factory contract used by Token Launch.
+5. Deploy `contracts/genforge_judge/deploy_project_token.py` for Token Launch.
 6. Copy the real contract addresses into Vercel as `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS`, `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`, and `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS`.
 7. Configure `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD` for the factory write method, and optionally `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD` for receipt readback.
 8. Redeploy `apps/web`, then verify wallet submission and receipt tracking from the browser UI.

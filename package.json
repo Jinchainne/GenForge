@@ -13,7 +13,7 @@
     "typecheck:genforge": "npm --prefix apps/web run typecheck",
     "test:genforge": "npm --prefix apps/web run test",
     "build:genforge": "npm --prefix apps/web run build",
-    "lint:contract": "genvm-lint check contracts/genforge_judge/review_submission.py",
+    "lint:contract": "python -X utf8 -m genvm_linter.cli check contracts/genforge_judge/review_submission.py && python -X utf8 -m genvm_linter.cli check contracts/genforge_judge/resolve_enterprise_dispute.py && python -X utf8 -m genvm_linter.cli check contracts/genforge_judge/deploy_project_token.py",
     "test:contract:direct": "python -m pytest tests/direct -v",
     "test:contract:integration": "gltest tests/integration -v -s"
   },

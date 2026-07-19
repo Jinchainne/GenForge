@@ -50,7 +50,7 @@ export interface GenLayerCliStatus {
       | "operator_disabled";
     blockers: string[];
     commands: Array<{
-      id: "review" | "dispute";
+      id: "review" | "dispute" | "token_factory";
       label: string;
       command: string;
     }>;
@@ -59,7 +59,7 @@ export interface GenLayerCliStatus {
 
 export interface DeployAttemptResult {
   ok: boolean;
-  contract: "review" | "dispute";
+  contract: "review" | "dispute" | "token_factory";
   command: string;
   stdout: string;
   stderr: string;
@@ -145,6 +145,11 @@ export async function getGenLayerCliStatus(): Promise<GenLayerCliStatus> {
       id: "dispute" as const,
       label: "Deploy enterprise dispute judge",
       command: getDeployCommand("dispute"),
+    },
+    {
+      id: "token_factory" as const,
+      label: "Deploy project token factory",
+      command: getDeployCommand("token_factory"),
     },
   ];
 
@@ -348,7 +353,7 @@ export async function getGenLayerCliStatus(): Promise<GenLayerCliStatus> {
 }
 
 export async function attemptOperatorDeploy(
-  contract: "review" | "dispute",
+  contract: "review" | "dispute" | "token_factory",
 ): Promise<DeployAttemptResult> {
   const observedAt = new Date().toISOString();
   const enabled = process.env.GENFORGE_ENABLE_OPERATOR_DEPLOY === "true";
@@ -370,12 +375,19 @@ export async function attemptOperatorDeploy(
   const contractFile =
     contract === "review"
       ? path.join(repoRoot, "contracts", "genforge_judge", "review_submission.py")
-      : path.join(
-          repoRoot,
-          "contracts",
-          "genforge_judge",
-          "resolve_enterprise_dispute.py",
-        );
+      : contract === "dispute"
+        ? path.join(
+            repoRoot,
+            "contracts",
+            "genforge_judge",
+            "resolve_enterprise_dispute.py",
+          )
+        : path.join(
+            repoRoot,
+            "contracts",
+            "genforge_judge",
+            "deploy_project_token.py",
+          );
 
   try {
     const result = await execFileAsync(

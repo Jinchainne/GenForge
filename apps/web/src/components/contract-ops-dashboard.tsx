@@ -48,7 +48,7 @@ type OpsStatusResponse = {
         | "operator_disabled";
       blockers: string[];
       commands: Array<{
-        id: "review" | "dispute";
+        id: "review" | "dispute" | "token_factory";
         label: string;
         command: string;
       }>;
@@ -60,7 +60,7 @@ type DeployResponse = {
   ok: boolean;
   result: {
     ok: boolean;
-    contract: "review" | "dispute";
+    contract: "review" | "dispute" | "token_factory";
     command: string;
     stdout: string;
     stderr: string;
@@ -148,7 +148,7 @@ export function ContractOpsDashboard() {
     };
   }, []);
 
-  async function handleDeploy(contract: "review" | "dispute") {
+  async function handleDeploy(contract: "review" | "dispute" | "token_factory") {
     setDeployState({
       status: "running",
       message: `Running operator deployment for the ${contract} contract...`,
