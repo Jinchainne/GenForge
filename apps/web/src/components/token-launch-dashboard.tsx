@@ -25,8 +25,6 @@ type TokenDeployState =
 type TokenLaunchDashboardProps = {
   wallet: WalletConnectionState;
   walletBusy: boolean;
-  onConnectWallet: () => Promise<void>;
-  onDisconnectWallet: () => Promise<void>;
 };
 
 export function TokenLaunchDashboard({
@@ -269,7 +267,7 @@ export function TokenLaunchDashboard({
                   recipient: event.target.value,
                 }))
               }
-              placeholder="Connect wallet or paste recipient address"
+              placeholder="Uses connected wallet unless another recipient is pasted"
             />
             <label htmlFor="token-purpose">Purpose and eligibility rule</label>
             <textarea

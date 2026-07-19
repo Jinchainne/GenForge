@@ -89,7 +89,7 @@ export function WorkspaceShell() {
     message: isBrowserWalletAvailable()
       ? "Connect a wallet to sign GenLayer trade case and settlement requests."
       : "No browser wallet provider was detected.",
-    providerLabel: getBrowserWalletLabel(),
+    providerLabel: undefined,
   });
 
   const registry = [
@@ -140,7 +140,7 @@ export function WorkspaceShell() {
       setWallet({
         status: "missing_provider",
         message: "No compatible browser wallet provider was detected.",
-        providerLabel: getBrowserWalletLabel(),
+        providerLabel: undefined,
       });
       return;
     }
@@ -149,7 +149,7 @@ export function WorkspaceShell() {
     setWallet({
       status: "connecting",
       message: "Requesting wallet access for GenLayer trade operations.",
-      providerLabel: getBrowserWalletLabel(),
+      providerLabel: undefined,
     });
 
     try {
@@ -181,7 +181,7 @@ export function WorkspaceShell() {
     const result = await disconnectBrowserWallet();
     setWallet({
       status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
-      providerLabel: getBrowserWalletLabel(),
+      providerLabel: undefined,
       message: result.message,
     });
     setWalletBusy(false);
@@ -289,7 +289,9 @@ export function WorkspaceShell() {
               <span className="wallet-label">
                 {wallet.address
                   ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
-                  : wallet.providerLabel ?? "Wallet"}
+                  : wallet.status === "missing_provider"
+                    ? "No wallet"
+                    : "Wallet"}
               </span>
               {wallet.status === "connected" ? (
                 <button
@@ -340,8 +342,6 @@ export function WorkspaceShell() {
             <EnterpriseDisputeDashboard
               wallet={wallet}
               walletBusy={walletBusy}
-              onConnectWallet={handleConnectWallet}
-              onDisconnectWallet={handleDisconnectWallet}
             />
           ) : null}
           {workspace === "contract_ops" ? <ContractOpsDashboard /> : null}
@@ -349,8 +349,6 @@ export function WorkspaceShell() {
             <TokenLaunchDashboard
               wallet={wallet}
               walletBusy={walletBusy}
-              onConnectWallet={handleConnectWallet}
-              onDisconnectWallet={handleDisconnectWallet}
             />
           ) : null}
         </section>

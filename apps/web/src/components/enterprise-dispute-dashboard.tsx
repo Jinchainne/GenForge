@@ -35,8 +35,6 @@ type ReportPage = "overview" | "packet" | "operations" | "chain";
 type TradeCaseDashboardProps = {
   wallet: WalletConnectionState;
   walletBusy: boolean;
-  onConnectWallet: () => Promise<void>;
-  onDisconnectWallet: () => Promise<void>;
 };
 
 export function EnterpriseDisputeDashboard({
