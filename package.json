@@ -2,7 +2,7 @@
   "name": "genforge",
   "version": "0.1.0",
   "private": true,
-  "description": "GenForge evaluates public GitHub submissions with deterministic evidence collection and GenLayer-native adjudication.",
+  "description": "GenForge adjudicates goods-trade document disputes with bounded evidence packets, wallet-signed GenLayer writes, and settlement records.",
   "workspaces": [
     "apps/*",
     "packages/*"

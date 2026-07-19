@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import {
   connectBrowserWallet,
@@ -192,7 +193,14 @@ export function WorkspaceShell() {
       <aside className="workspace-nav" aria-label="GenForge workspace menu">
         <div className="workspace-brand">
           <span className="brand-mark" aria-hidden="true">
-            GF
+            <Image
+              className="brand-logo"
+              src="/genforge-logo.svg"
+              alt=""
+              width={44}
+              height={44}
+              priority
+            />
           </span>
           <div>
             <div className="eyebrow">GenForge</div>

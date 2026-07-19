@@ -1,0 +1,14 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">GenForge logo</title>
+  <desc id="desc">A folded trade document with an on-chain settlement mark.</desc>
+  <rect x="18" y="18" width="220" height="220" rx="34" fill="#10221F"/>
+  <path d="M73 58H154L190 94V198H73V58Z" fill="#F7FAF7"/>
+  <path d="M154 58V94H190" fill="#D7F4E9"/>
+  <path d="M154 58V94H190" stroke="#0E7D6F" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M93 116H162" stroke="#10221F" stroke-width="10" stroke-linecap="round"/>
+  <path d="M93 142H174" stroke="#10221F" stroke-width="10" stroke-linecap="round"/>
+  <path d="M93 168H132" stroke="#10221F" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="170" cy="171" r="28" fill="#0E7D6F"/>
+  <path d="M156 170L166 180L185 158" stroke="#F7FAF7" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M73 58H154L190 94V198H73V58Z" stroke="#8FE5CD" stroke-width="8" stroke-linejoin="round"/>
+</svg>

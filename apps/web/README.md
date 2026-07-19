@@ -1,67 +1,89 @@
-# GenForge Web MVP
+# GenForge Web
 
-This application is the GenForge web surface for public GitHub submission
-evaluation. It combines deterministic evidence collection with live or
-explicitly unavailable GenLayer consensus status.
+Next.js web surface for the GenForge trade document console.
 
-## Stack
-
-- Next.js App Router
-- TypeScript with strict type checking
-- server-side route handlers
-- product-neutral local packages under `packages/*`
-
-## Environment
-
-Copy `.env.example` to `.env.local` and configure the values you need:
-
-```bash
-GITHUB_TOKEN=your_token_here
-GENLAYER_MODE=sdk
-GENLAYER_NETWORK=studionet
-GENLAYER_CONTRACT_ADDRESS=0x...
-GENLAYER_RPC_URL=https://...
-GENLAYER_PRIVATE_KEY=0x...
-NEXT_PUBLIC_GENLAYER_NETWORK=studionet
-NEXT_PUBLIC_GENLAYER_RPC_URL=https://...
-NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS=0x...
-NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS=0x...
-NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS=0x...
-NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD=deploy_token
-NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD=
+```text
+apps/web
+|
++-- app/
+|   +-- page.tsx          renders the workspace shell
+|   +-- layout.tsx        metadata, fonts, logo icon
+|   +-- globals.css       Hallmark-stamped workbench UI
+|
++-- public/
+|   +-- genforge-logo.svg brand mark used by UI and metadata
+|
++-- src/components/
+|   +-- workspace-shell.tsx
+|   +-- enterprise-dispute-dashboard.tsx
+|   +-- contract-ops-dashboard.tsx
+|   +-- token-launch-dashboard.tsx
+|
++-- src/lib/
+|   +-- public-genlayer-config.ts
+|   +-- dispute-domain.ts
+|   +-- review-workflow.ts
+|
++-- src/test/
+    +-- ui.test.tsx
+    +-- genlayer-client.test.ts
+    +-- genlayer-ops-route.test.ts
 ```
 
-`GENLAYER_PRIVATE_KEY` stays server-side only. `NEXT_PUBLIC_*` values are
-intentionally exposed to the browser so a compatible wallet can connect to the
-selected network and call the configured GenLayer contracts.
+## Purpose
 
-## Scripts
+The web app is for goods-trade dispute work:
 
-Run from `apps/web`:
+- import or paste commercial document evidence
+- structure buyer and seller positions
+- build a bounded GenLayer adjudication packet
+- connect a browser wallet
+- submit the packet to configured GenLayer contracts
+- track receipts and settlement records
+
+It does not clone untrusted repositories, execute user projects, or invent transaction receipts.
+
+## Why GenLayer
+
+This belongs on GenLayer because the disputed result depends on adjudication over commercial evidence, not only deterministic form validation. The app prepares the evidence, then writes the bounded case to a GenLayer Intelligent Contract so validator consensus can resolve liability, payment adjustment, or request-more-info outcomes.
+
+## Verification Workflow
+
+```text
+import documents
+  -> build bounded trade packet
+  -> connect wallet
+  -> submit with writeContract
+  -> wait for receipt
+  -> read stored judgment or settlement record
+```
+
+## Run
 
 ```bash
 npm install
 npm run dev
+```
+
+## Check
+
+```bash
 npm run lint
 npm run typecheck
 npm run test
 npm run build
 ```
 
-## Vercel
+## Environment
 
-Set the Vercel Root Directory to:
-
-```text
-apps/web
+```bash
+NEXT_PUBLIC_GENLAYER_NETWORK=studionet
+NEXT_PUBLIC_GENLAYER_RPC_URL=https://studio.genlayer.com/api
+NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS=0x...
+NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS=0x...
+NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD=deploy_token
+NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD=get_token_deployment_json
+NEXT_PUBLIC_GENLAYER_STUDIO_URL=https://studio.genlayer.com
 ```
 
-Because this app imports local packages from `../../packages/*`, enable
-Vercel's `Include source files outside of the Root Directory` setting.
-
-The project includes [vercel.json](/abs/path/C:/Users/Asus/Desktop/genforge-submission/apps/web/vercel.json:1)
-to set API function duration for the review route.
-
-This app does not clone repositories, execute repository code, or install
-repository dependencies. It uses GitHub API metadata, trees, and bounded file
-content retrieval only.
+Set Vercel Root Directory to `apps/web` and enable `Include source files outside of the Root Directory`.

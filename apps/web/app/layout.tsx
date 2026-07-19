@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   title: "GenForge Trade Document Console",
   description:
     "Goods-trade document intake, buyer-seller evidence packets, GenLayer adjudication, and settlement token records.",
+  icons: {
+    icon: "/genforge-logo.svg",
+    shortcut: "/genforge-logo.svg",
+    apple: "/genforge-logo.svg",
+  },
 };
 
 export default function RootLayout({

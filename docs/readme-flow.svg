@@ -1,0 +1,71 @@
+<svg width="1120" height="520" viewBox="0 0 1120 520" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">GenForge workflow map</title>
+  <desc id="desc">A hand-drawn style tree showing trade documents, readiness checks, wallet signing, GenLayer adjudication, receipt tracking, and settlement records.</desc>
+  <rect width="1120" height="520" rx="28" fill="#F5F8F5"/>
+  <path d="M70 80 C220 52 354 54 494 80 C645 107 793 62 960 82" stroke="#C9D8D5" stroke-width="3" stroke-linecap="round"/>
+  <path d="M75 449 C245 477 447 456 612 462 C761 468 874 489 1030 452" stroke="#C9D8D5" stroke-width="3" stroke-linecap="round"/>
+  <g transform="translate(72 56)">
+    <rect x="0" y="0" width="154" height="76" rx="18" fill="#10221F"/>
+    <path d="M27 18H82L103 39V59H27V18Z" fill="#F7FAF7"/>
+    <path d="M82 18V39H103" stroke="#8FE5CD" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M42 38H76" stroke="#10221F" stroke-width="4" stroke-linecap="round"/>
+    <path d="M42 50H88" stroke="#10221F" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="106" cy="52" r="15" fill="#0E7D6F"/>
+    <path d="M99 52L104 57L114 46" stroke="#F7FAF7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="122" y="35" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="12" fill="#D7F4E9">GF</text>
+    <text x="122" y="53" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="12" fill="#D7F4E9">TRADE</text>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="15" fill="#10221F">
+    <text x="72" y="172">GenForge</text>
+    <text x="72" y="196">Trade Document Console</text>
+  </g>
+  <g stroke="#0E7D6F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M226 95 C280 96 298 102 332 126"/>
+    <path d="M332 126 C370 151 390 170 432 192"/>
+    <path d="M332 126 C384 126 421 124 468 126"/>
+    <path d="M332 126 C376 93 419 78 472 72"/>
+    <path d="M642 126 C700 126 735 149 782 178"/>
+    <path d="M642 126 C704 102 744 96 798 96"/>
+    <path d="M642 126 C698 156 730 198 778 244"/>
+    <path d="M902 178 C938 198 960 224 984 256"/>
+    <path d="M902 96 C956 116 985 150 1016 190"/>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace">
+    <g transform="translate(328 96)">
+      <rect x="0" y="0" width="310" height="64" rx="16" fill="#FFFFFF" stroke="#B8CBC7" stroke-width="2"/>
+      <text x="18" y="27" font-size="15" font-weight="700" fill="#10221F">1. Import documents</text>
+      <text x="18" y="49" font-size="13" fill="#52635F">PO, invoice, B/L, packing list, emails</text>
+    </g>
+    <g transform="translate(468 38)">
+      <rect x="0" y="0" width="304" height="64" rx="16" fill="#FFFFFF" stroke="#B8CBC7" stroke-width="2"/>
+      <text x="18" y="27" font-size="15" font-weight="700" fill="#10221F">2. Build bounded packet</text>
+      <text x="18" y="49" font-size="13" fill="#52635F">buyer claim + seller response + remedy</text>
+    </g>
+    <g transform="translate(430 178)">
+      <rect x="0" y="0" width="316" height="76" rx="16" fill="#FFFFFF" stroke="#B8CBC7" stroke-width="2"/>
+      <text x="18" y="29" font-size="15" font-weight="700" fill="#10221F">3. Deterministic readiness</text>
+      <text x="18" y="52" font-size="13" fill="#52635F">missing docs stay blocked or request-more-info</text>
+    </g>
+    <g transform="translate(796 62)">
+      <rect x="0" y="0" width="246" height="68" rx="16" fill="#DDF7EF" stroke="#0E7D6F" stroke-width="2"/>
+      <text x="18" y="29" font-size="15" font-weight="700" fill="#10221F">4. Wallet signs</text>
+      <text x="18" y="52" font-size="13" fill="#34524C">browser writeContract path</text>
+    </g>
+    <g transform="translate(778 158)">
+      <rect x="0" y="0" width="264" height="84" rx="16" fill="#10221F" stroke="#0E7D6F" stroke-width="2"/>
+      <text x="18" y="31" font-size="15" font-weight="700" fill="#F7FAF7">5. GenLayer adjudicates</text>
+      <text x="18" y="54" font-size="13" fill="#D7F4E9">non-comparative validator consensus</text>
+    </g>
+    <g transform="translate(778 278)">
+      <rect x="0" y="0" width="264" height="72" rx="16" fill="#FFFFFF" stroke="#B8CBC7" stroke-width="2"/>
+      <text x="18" y="29" font-size="15" font-weight="700" fill="#10221F">6. Track receipt</text>
+      <text x="18" y="52" font-size="13" fill="#52635F">pending, finalized, failed stay explicit</text>
+    </g>
+    <g transform="translate(470 344)">
+      <rect x="0" y="0" width="302" height="76" rx="16" fill="#FFFFFF" stroke="#B8CBC7" stroke-width="2"/>
+      <text x="18" y="29" font-size="15" font-weight="700" fill="#10221F">7. Settlement record</text>
+      <text x="18" y="52" font-size="13" fill="#52635F">credit/token registry, not fake value transfer</text>
+    </g>
+  </g>
+  <path d="M778 314 C716 340 694 350 772 382" stroke="#0E7D6F" stroke-width="3" stroke-linecap="round"/>
+</svg>

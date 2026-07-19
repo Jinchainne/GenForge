@@ -1,4 +1,4 @@
-/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V4 */
+/* Hallmark · pre-emit critique: P5 H4 E5 S5 R4 V4 */
 /* Hallmark · genre: modern-minimal · macrostructure: Workbench · design-system: genlayer-ui + hallmark · anchor hue: moss-green · contrast: pass (40–41) · mobile: pass (34, 49, 50–57) */
 :root {
   --color-paper: oklch(96% 0.006 235);
@@ -74,8 +74,8 @@ button:disabled {
 
 .visually-hidden {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: 1px !important;
+  height: 1px !important;
   padding: 0;
   margin: -1px;
   overflow: hidden;
@@ -134,10 +134,14 @@ button:disabled {
   place-items: center;
   border-radius: 8px;
   background: var(--color-ink);
-  color: var(--color-hero-text);
-  font-family: var(--font-mono), monospace;
-  font-size: 0.9rem;
-  font-weight: 700;
+  overflow: hidden;
+  box-shadow: 0 10px 24px color-mix(in oklab, var(--color-ink) 16%, transparent);
+}
+
+.brand-logo {
+  display: block;
+  width: 44px;
+  height: 44px;
 }
 
 .workspace-brand strong {
@@ -519,6 +523,7 @@ button:disabled {
 }
 
 .panel {
+  min-width: 0;
   background: var(--color-panel);
   backdrop-filter: blur(18px);
   border: 1px solid var(--color-rule);
@@ -608,7 +613,9 @@ button:disabled {
 
 .submission-form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
+  min-width: 0;
 }
 
 .scope-strip {
@@ -633,6 +640,8 @@ button:disabled {
 }
 
 .submission-form input {
+  width: 100%;
+  min-width: 0;
   min-height: 56px;
   border-radius: var(--radius-inner);
   border: 1px solid var(--color-rule);
@@ -1335,6 +1344,11 @@ button:disabled {
 
   .workspace-tab {
     width: 100%;
+  }
+
+  .workspace-page-turn {
+    animation: none;
+    transform: none;
   }
 
   .dashboard-shell {
