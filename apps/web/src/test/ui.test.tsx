@@ -3,27 +3,26 @@ import { describe, expect, it } from "vitest";
 import { WorkspaceShell } from "@/components/workspace-shell";
 
 describe("WorkspaceShell", () => {
-  it("renders the builder project review workspace by default", () => {
+  it("renders the trade document case workspace by default", () => {
     render(<WorkspaceShell />);
 
-    expect(screen.getByText("Builder review console")).toBeInTheDocument();
+    expect(screen.getByText("Trade document console")).toBeInTheDocument();
     expect(
-      screen.getByText("Use this to judge GenLayer builder projects."),
+      screen.getByText("Use this for goods-trade dispute evidence."),
     ).toBeInTheDocument();
-    expect(screen.getByText("Submission Gate")).toBeInTheDocument();
+    expect(screen.getByText("Trade Desk")).toBeInTheDocument();
     expect(screen.getByText("Wallet runtime")).toBeInTheDocument();
     expect(
-      screen.getAllByRole("button", { name: "Project Review" }).length,
+      screen.getAllByRole("button", { name: "Trade Case" }).length,
     ).toBeGreaterThan(0);
     expect(
       screen.getAllByRole("button", { name: "Runtime Ops" }).length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getAllByRole("button", { name: "Reward Token" }).length,
+      screen.getAllByRole("button", { name: "Settlement Token" }).length,
     ).toBeGreaterThan(0);
-    expect(
-      screen.getByLabelText("Public GitHub repository URL"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Review Builder Project")).toBeInTheDocument();
+    expect(screen.getByLabelText("Trade case title")).toBeInTheDocument();
+    expect(screen.getByText("Import Documents")).toBeInTheDocument();
+    expect(screen.getByText("Build Trade Case")).toBeInTheDocument();
   });
 });

@@ -50,14 +50,14 @@ export function TokenLaunchDashboard() {
         : "Configure the GenLayer token factory before deploying a project token.",
   });
   const [form, setForm] = useState({
-    projectName: "GenForge Builder Track",
-    tokenName: "GenForge Review Credit",
-    tokenSymbol: "GFRC",
+    projectName: "PO-2026-044 Settlement Credit",
+    tokenName: "Trade Settlement Credit",
+    tokenSymbol: "TSC",
     initialSupply: "1000000",
     decimals: "18",
     recipient: "",
     purpose:
-      "Reward accepted GenLayer builder submissions after deterministic evidence and validator review.",
+      "Record payable adjustment or service credit after accepted GenLayer trade document adjudication.",
   });
 
   const deploymentRequest = useMemo(
@@ -127,12 +127,20 @@ export function TokenLaunchDashboard() {
 
   async function handleDisconnectWallet() {
     setBusy(true);
+    const previousAddress = wallet.address;
     const result = await disconnectBrowserWallet();
     setWallet({
       status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
       providerLabel: getBrowserWalletLabel(),
       message: result.message,
     });
+    setForm((current) => ({
+      ...current,
+      recipient:
+        previousAddress && current.recipient === previousAddress
+          ? ""
+          : current.recipient,
+    }));
     setBusy(false);
   }
 
@@ -369,7 +377,7 @@ export function TokenLaunchDashboard() {
                   tokenConfigIssues.length > 0
                 }
               >
-                {busy ? "Submitting..." : "Record Reward Token"}
+                {busy ? "Submitting..." : "Record Settlement Token"}
               </button>
               <button
                 type="button"
@@ -384,12 +392,12 @@ export function TokenLaunchDashboard() {
         </section>
 
         <section className="panel hero-panel workbench-rail">
-          <div className="eyebrow">Reward Token</div>
-          <h2>Wallet-signed reward registry through a GenLayer factory</h2>
+          <div className="eyebrow">Settlement Token</div>
+          <h2>Wallet-signed settlement registry through a GenLayer factory</h2>
           <p>
-            Prepare a bounded token request for accepted builder projects.
-            Submission stays blocked until a real factory address and method are
-            configured.
+            Prepare a bounded credit or settlement token request for an accepted
+            goods-trade case. Submission stays blocked until a real factory
+            address and method are configured.
           </p>
           <div className="status-rail" aria-label="Token deployment workflow">
             <span className="done">Plan</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   connectBrowserWallet,
   disconnectBrowserWallet,
@@ -23,9 +23,10 @@ import {
 } from "@/lib/public-genlayer-config";
 import type { WalletConnectionState } from "@/lib/review-workflow";
 
-const defaultEvidence = `Signed contract section covering delivery or service scope
-Invoice or purchase order associated with the disputed milestone
-Email or notice showing the counterparty's disputed position`;
+const defaultEvidence = `Purchase order PO-2026-044 for 1,200 cartons of textile goods
+Commercial invoice INV-7781 showing unit price, Incoterms, and payment term
+Bill of lading BOL-SGN-2407 and packing list showing shipped quantity
+Email thread where buyer reports short shipment and seller disputes liability`;
 const defaultFilingDate = new Date().toISOString().slice(0, 10);
 const defaultTargetResolutionDate = new Date(
   Date.now() + 1000 * 60 * 60 * 24 * 7,
@@ -42,32 +43,36 @@ export function EnterpriseDisputeDashboard() {
   const disputeContractAddress =
     publicConfig.disputeContractAddress ?? publicConfig.contractAddress;
   const [reportPage, setReportPage] = useState<ReportPage>("overview");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState({
-    caseTitle: "Terminal turnaround delay dispute",
-    disputeType: "logistics",
+    caseTitle: "Short shipment claim under purchase order PO-2026-044",
+    disputeType: "procurement",
     priority: "critical",
-    claimantName: "OceanBridge Logistics Ltd.",
-    respondentName: "Northport Container Services",
-    contractReference: "MSA-2026-044 / Appendix B / SLA section 3.2",
+    claimantName: "An Phu Trading Co., Ltd.",
+    respondentName: "Northstar Export Pte. Ltd.",
+    contractReference: "PO-2026-044 / Commercial Invoice INV-7781 / BOL-SGN-2407",
     jurisdiction:
-      "Singapore arbitration clause with port-operator commercial notice requirements",
+      "Singapore law, ICC arbitration clause, Incoterms 2020 CIF Ho Chi Minh City",
     claimSummary:
-      "The claimant alleges that the respondent caused avoidable berth and container handoff delays, triggering detention costs and missing the contractual turnaround SLA for two consecutive sailings.",
+      "The buyer alleges that the seller shipped fewer cartons than the purchase order and invoice required, causing resale shortfall and emergency replacement purchases.",
     respondentPosition:
-      "The respondent states that weather alerts, customs inspection holds, and a late trucking release from the claimant materially contributed to the delay and should qualify as exceptions under the service agreement.",
+      "The seller states that the shipped quantity matched the warehouse release record and that any shortage occurred after carrier handover or during destination handling.",
     requestedRemedy:
-      "Allocate liability for detention and service credits, determine whether SLA exceptions apply, and recommend the payable adjustment.",
+      "Determine whether the buyer may deduct the short-shipped quantity, freight allocation, and inspection cost from the payable balance.",
     businessImpact:
-      "Repeated delay charges are affecting voyage margin, customer SLA performance, and executive reporting for a strategic shipping account.",
+      "The missing cartons affect downstream delivery commitments, customs reconciliation, and payment release for a repeat supplier.",
     governingTerms:
-      "Service agreement, SLA appendix, force majeure and notice provisions",
-    amountClaimed: "USD 185,000",
+      "Purchase order, commercial invoice, packing list, bill of lading, Incoterms 2020",
+    amountClaimed: "USD 48,600",
     filingDate: defaultFilingDate,
     targetResolutionDate: defaultTargetResolutionDate,
     counterpartyNoticeStatus: "ready_to_send",
     evidenceText: defaultEvidence,
   });
   const [report, setReport] = useState<EnterpriseDisputeReport | null>(null);
+  const [importedDocuments, setImportedDocuments] = useState<
+    Array<{ name: string; type: string; size: number; status: string }>
+  >([]);
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [onchainState, setOnchainState] = useState<{
@@ -78,12 +83,12 @@ export function EnterpriseDisputeDashboard() {
   }>({
     status: "idle",
     message:
-      "Generate a dossier, connect a wallet, then submit the dispute packet for validator adjudication.",
+      "Import trade documents, build a case file, connect a wallet, then submit the bounded packet for validator adjudication.",
   });
   const [wallet, setWallet] = useState<WalletConnectionState>({
     status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
     message: isBrowserWalletAvailable()
-      ? "Connect a browser wallet to prepare enterprise dispute adjudication."
+      ? "Connect a browser wallet to prepare trade document adjudication."
       : "No browser wallet provider was detected in this browser.",
     providerLabel: getBrowserWalletLabel(),
   });
@@ -96,6 +101,49 @@ export function EnterpriseDisputeDashboard() {
         .filter(Boolean),
     [form.evidenceText],
   );
+
+  async function handleImportDocuments(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) {
+      return;
+    }
+
+    const importedLines = await Promise.all(
+      files.map(async (file) => {
+        const isReadableText =
+          file.type.startsWith("text/") ||
+          /\.(csv|json|md|txt|log)$/i.test(file.name);
+        if (isReadableText) {
+          const text = await file.text();
+          const excerpt = text.replace(/\s+/g, " ").trim().slice(0, 480);
+          return `Imported document ${file.name}: ${excerpt || "empty text file"}`;
+        }
+        return `Imported document ${file.name} (${file.type || "unknown type"}, ${Math.ceil(
+          file.size / 1024,
+        )} KB) requires manual content review before validator submission.`;
+      }),
+    );
+
+    setImportedDocuments((current) => [
+      ...files.map((file) => ({
+        name: file.name,
+        type: file.type || "unknown",
+        size: file.size,
+        status:
+          file.type.startsWith("text/") || /\.(csv|json|md|txt|log)$/i.test(file.name)
+            ? "text imported"
+            : "manual review",
+      })),
+      ...current,
+    ]);
+    setForm((current) => ({
+      ...current,
+      evidenceText: [current.evidenceText, ...importedLines].filter(Boolean).join("\n"),
+    }));
+    event.target.value = "";
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -126,8 +174,8 @@ export function EnterpriseDisputeDashboard() {
         status: "idle",
         message:
           payload.report.decision === "ACCEPT_FOR_SCORING"
-            ? "The dossier is ready for wallet-signed adjudication once the dispute contract path is configured."
-            : "Fix the dossier gaps before escalating the dispute on-chain.",
+            ? "The trade case is ready for wallet-signed adjudication once the dispute contract path is configured."
+            : "Fix the document or seller-response gaps before escalating the case on-chain.",
       });
     } catch (error) {
       setErrorMessage(
@@ -143,7 +191,7 @@ export function EnterpriseDisputeDashboard() {
       setWallet({
         status: "missing_provider",
         message:
-          "An injected browser wallet is required for enterprise adjudication.",
+          "An injected browser wallet is required for trade document adjudication.",
         providerLabel: getBrowserWalletLabel(),
       });
       return;
@@ -161,7 +209,7 @@ export function EnterpriseDisputeDashboard() {
         address: connection.address,
         network: connection.network,
         providerLabel: getBrowserWalletLabel(),
-        message: `${getBrowserWalletLabel()} connected on ${connection.network}. The enterprise dispute workflow can now prepare signed submissions.`,
+        message: `${getBrowserWalletLabel()} connected on ${connection.network}. The trade case can now prepare signed submissions.`,
       });
     } catch (error) {
       setWallet({
@@ -246,7 +294,7 @@ export function EnterpriseDisputeDashboard() {
 
       updateResolutionState(
         execution,
-        "Dispute submission completed without a structured parser message.",
+        "Trade case submission completed without a structured parser message.",
       );
     } catch (error) {
       setOnchainState({
@@ -254,7 +302,7 @@ export function EnterpriseDisputeDashboard() {
         message:
           error instanceof Error
             ? error.message
-            : "Dispute submission failed unexpectedly.",
+            : "Trade case submission failed unexpectedly.",
       });
     } finally {
       setBusy(false);
@@ -313,13 +361,13 @@ export function EnterpriseDisputeDashboard() {
         <section className="panel">
           <div className="panel-header">
             <div>
-              <div className="eyebrow">Case Intake</div>
-              <h3>Appeal and dispute dossier</h3>
+              <div className="eyebrow">Trade Document Intake</div>
+              <h3>Goods purchase dispute file</h3>
             </div>
-            <span>validator packet</span>
+            <span>buyer-seller packet</span>
           </div>
           <form className="submission-form" onSubmit={handleSubmit}>
-            <label htmlFor="case-title">Case title</label>
+            <label htmlFor="case-title">Trade case title</label>
             <input
               id="case-title"
               value={form.caseTitle}
@@ -330,7 +378,7 @@ export function EnterpriseDisputeDashboard() {
                 }))
               }
             />
-            <label htmlFor="dispute-type">Dispute type</label>
+            <label htmlFor="dispute-type">Goods dispute type</label>
             <select
               id="dispute-type"
               className="dashboard-select"
@@ -342,12 +390,12 @@ export function EnterpriseDisputeDashboard() {
                 }))
               }
             >
-              <option value="procurement">Procurement</option>
-              <option value="services">Services</option>
-              <option value="logistics">Port / Logistics</option>
-              <option value="insurance">Insurance</option>
-              <option value="employment">Employment</option>
-              <option value="legal_ops">Legal Ops</option>
+              <option value="procurement">Purchase order / supply</option>
+              <option value="logistics">Shipping / delivery</option>
+              <option value="insurance">Cargo insurance</option>
+              <option value="services">Inspection / service</option>
+              <option value="legal_ops">Trade legal ops</option>
+              <option value="employment">Labor-linked shipment issue</option>
               <option value="other">Other</option>
             </select>
             <div className="field-grid">
@@ -394,7 +442,7 @@ export function EnterpriseDisputeDashboard() {
             </div>
             <div className="field-grid">
               <div>
-                <label htmlFor="claimant-name">Claimant</label>
+                <label htmlFor="claimant-name">Buyer / claimant</label>
                 <input
                   id="claimant-name"
                   value={form.claimantName}
@@ -407,7 +455,7 @@ export function EnterpriseDisputeDashboard() {
                 />
               </div>
               <div>
-                <label htmlFor="respondent-name">Respondent</label>
+                <label htmlFor="respondent-name">Seller / respondent</label>
                 <input
                   id="respondent-name"
                   value={form.respondentName}
@@ -421,7 +469,7 @@ export function EnterpriseDisputeDashboard() {
               </div>
             </div>
             <label htmlFor="contract-reference">
-              Contract or policy reference
+              PO, invoice, B/L, or contract reference
             </label>
             <input
               id="contract-reference"
@@ -433,7 +481,7 @@ export function EnterpriseDisputeDashboard() {
                 }))
               }
             />
-            <label htmlFor="jurisdiction">Jurisdiction and forum</label>
+            <label htmlFor="jurisdiction">Governing law, forum, Incoterms</label>
             <input
               id="jurisdiction"
               value={form.jurisdiction}
@@ -444,7 +492,7 @@ export function EnterpriseDisputeDashboard() {
                 }))
               }
             />
-            <label htmlFor="claim-summary">Claim summary</label>
+            <label htmlFor="claim-summary">Buyer claim summary</label>
             <textarea
               id="claim-summary"
               className="dashboard-textarea"
@@ -456,7 +504,7 @@ export function EnterpriseDisputeDashboard() {
                 }))
               }
             />
-            <label htmlFor="respondent-position">Respondent position</label>
+            <label htmlFor="respondent-position">Seller response</label>
             <textarea
               id="respondent-position"
               className="dashboard-textarea"
@@ -468,7 +516,7 @@ export function EnterpriseDisputeDashboard() {
                 }))
               }
             />
-            <label htmlFor="requested-remedy">Requested remedy</label>
+            <label htmlFor="requested-remedy">Requested settlement</label>
             <textarea
               id="requested-remedy"
               className="dashboard-textarea"
@@ -480,7 +528,7 @@ export function EnterpriseDisputeDashboard() {
                 }))
               }
             />
-            <label htmlFor="business-impact">Business impact</label>
+            <label htmlFor="business-impact">Commercial impact</label>
             <textarea
               id="business-impact"
               className="dashboard-textarea"
@@ -494,7 +542,7 @@ export function EnterpriseDisputeDashboard() {
             />
             <div className="field-grid">
               <div>
-                <label htmlFor="governing-terms">Governing terms</label>
+                <label htmlFor="governing-terms">Goods and document terms</label>
                 <input
                   id="governing-terms"
                   value={form.governingTerms}
@@ -507,7 +555,7 @@ export function EnterpriseDisputeDashboard() {
                 />
               </div>
               <div>
-                <label htmlFor="amount-claimed">Amount claimed</label>
+                <label htmlFor="amount-claimed">Claimed amount</label>
                 <input
                   id="amount-claimed"
                   value={form.amountClaimed}
@@ -552,7 +600,37 @@ export function EnterpriseDisputeDashboard() {
                 />
               </div>
             </div>
-            <label htmlFor="evidence-text">Evidence items, one per line</label>
+            <div className="document-import-row">
+              <label htmlFor="trade-document-import">Import trade documents</label>
+              <input
+                ref={fileInputRef}
+                id="trade-document-import"
+                className="visually-hidden"
+                type="file"
+                multiple
+                accept=".txt,.csv,.json,.md,.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                onChange={handleImportDocuments}
+              />
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Import Documents
+              </button>
+            </div>
+            {importedDocuments.length > 0 ? (
+              <div className="imported-document-list" aria-label="Imported documents">
+                {importedDocuments.map((document) => (
+                  <span key={`${document.name}-${document.size}`}>
+                    {document.name} · {document.status}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            <label htmlFor="evidence-text">
+              Evidence and correspondence, one item per line
+            </label>
             <textarea
               id="evidence-text"
               className="dashboard-textarea"
@@ -565,18 +643,19 @@ export function EnterpriseDisputeDashboard() {
               }
             />
             <button type="submit">
-              {busy ? "Building dossier..." : "Build Appeal Dossier"}
+              {busy ? "Building case file..." : "Build Trade Case"}
             </button>
           </form>
           {errorMessage ? <p className="error-callout">{errorMessage}</p> : null}
         </section>
 
         <section className="panel hero-panel workbench-rail">
-          <div className="eyebrow">Enterprise Adjudication</div>
-          <h2>Dispute dossier before validator escalation</h2>
+          <div className="eyebrow">Trade Adjudication</div>
+          <h2>Goods document case before validator escalation</h2>
           <p>
-            Capture both parties, contract terms, requested remedy, and evidence
-            readiness before any wallet-signed GenLayer action.
+            Capture buyer and seller positions, PO terms, shipment documents,
+            requested settlement, and evidence readiness before any
+            wallet-signed GenLayer action.
           </p>
           <div className="status-rail" aria-label="Dispute workflow">
             <span className="done">Intake</span>
@@ -589,11 +668,11 @@ export function EnterpriseDisputeDashboard() {
           <dl className="rail-facts">
             <div>
               <dt>Best fit</dt>
-              <dd>SLA, supplier, logistics, and legal-ops disputes</dd>
+              <dd>PO, invoice, B/L, packing list, delivery, and payment disputes</dd>
             </div>
             <div>
               <dt>On-chain boundary</dt>
-              <dd>Only after dossier readiness and wallet confirmation</dd>
+              <dd>Only after document readiness and wallet confirmation</dd>
             </div>
           </dl>
         </section>
@@ -715,15 +794,15 @@ export function EnterpriseDisputeDashboard() {
                   </div>
                   <div className="workflow-grid">
                     <article className="workflow-step">
-                      <strong>Claimant</strong>
+                      <strong>Buyer / claimant</strong>
                       <p>{report.parties.claimant}</p>
                     </article>
                     <article className="workflow-step">
-                      <strong>Respondent</strong>
+                      <strong>Seller / respondent</strong>
                       <p>{report.parties.respondent}</p>
                     </article>
                     <article className="workflow-step">
-                      <strong>Dispute type</strong>
+                      <strong>Trade issue</strong>
                       <p>{report.disputeType}</p>
                     </article>
                     <article className="workflow-step">
@@ -759,7 +838,7 @@ export function EnterpriseDisputeDashboard() {
               <div className="dossier-page">
                 <section className="panel">
                   <div className="panel-header">
-                    <h3>Enterprise Workflow</h3>
+                    <h3>Trade Workflow</h3>
                     <span>{report.workflowTimeline.length} steps</span>
                   </div>
                   <div className="workflow-grid">
@@ -777,7 +856,7 @@ export function EnterpriseDisputeDashboard() {
 
                 <section className="panel">
                   <div className="panel-header">
-                    <h3>Enterprise Issues</h3>
+                    <h3>Document Issues</h3>
                     <span>{report.issues.length}</span>
                   </div>
                   <div className="finding-list">
@@ -878,7 +957,7 @@ export function EnterpriseDisputeDashboard() {
                 <section className="panel">
                   <div className="panel-header">
                     <h3>Operating Model</h3>
-                    <span>Enterprise ready</span>
+                    <span>Trade ready</span>
                   </div>
                   <ul className="stack-list">
                     <li>
@@ -997,7 +1076,7 @@ export function EnterpriseDisputeDashboard() {
                   <div className="panel-header">
                     <div>
                       <div className="eyebrow">Wallet Layer</div>
-                      <h3>Blockchain Escalation</h3>
+                      <h3>On-chain Trade Adjudication</h3>
                     </div>
                     <span>{wallet.status}</span>
                   </div>
@@ -1015,7 +1094,7 @@ export function EnterpriseDisputeDashboard() {
                       <dd>{publicConfig.network ?? "Not configured"}</dd>
                     </div>
                     <div>
-                      <dt>Dispute contract</dt>
+                      <dt>Trade dispute contract</dt>
                       <dd>{disputeContractAddress ?? "Not configured"}</dd>
                     </div>
                     <div>
@@ -1039,10 +1118,10 @@ export function EnterpriseDisputeDashboard() {
                   ) : null}
                   {submissionConfigIssues.length > walletConfigIssues.length ? (
                     <div className="callout">
-                      <strong>Dispute contract not configured yet</strong>
+                      <strong>Trade dispute contract not configured yet</strong>
                       <p>
-                        Wallet connection can work now, but enterprise
-                        adjudication still needs a deployed GenLayer contract
+                        Wallet connection can work now, but trade adjudication
+                        still needs a deployed GenLayer contract
                         address before the case can be written on-chain.
                       </p>
                     </div>
@@ -1086,7 +1165,7 @@ export function EnterpriseDisputeDashboard() {
                         submissionConfigIssues.length > 0
                       }
                     >
-                      Submit Dispute On-Chain
+                      Submit Trade Case On-Chain
                     </button>
                     <button
                       type="button"

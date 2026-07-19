@@ -338,8 +338,8 @@ export function ContractOpsDashboard() {
               <div className="callout">
                 <strong>Browser wallet path is configured</strong>
                 <p>
-                  Wallet submission can target the configured review and
-                  dispute contracts from the hosted interface.
+                  Wallet submission can target the configured trade dispute
+                  contract from the hosted interface.
                 </p>
               </div>
             )}
@@ -363,8 +363,8 @@ export function ContractOpsDashboard() {
               <div className="callout">
                 <strong>Token factory path is configured</strong>
                 <p>
-                  The Token Launch workspace can send wallet-signed requests to
-                  the configured GenLayer factory contract.
+                  The Settlement Token workspace can send wallet-signed credit
+                  requests to the configured GenLayer factory contract.
                 </p>
               </div>
             )}

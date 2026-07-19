@@ -475,20 +475,36 @@ export async function disconnectBrowserWallet(
     };
   }
 
+  if (
+    !resolvedProvider.isMetaMask &&
+    !resolvedProvider.isBraveWallet &&
+    !resolvedProvider.isCoinbaseWallet
+  ) {
+    return {
+      revoked: false,
+      message:
+        "Wallet session was cleared in GenForge. Revoke the site connection inside the wallet if you want to remove provider permissions.",
+    };
+  }
+
   try {
     await resolvedProvider.request({
       method: "wallet_revokePermissions",
       params: [{ eth_accounts: {} }],
     });
+    const accounts = await resolvedProvider.request({ method: "eth_accounts" });
+    const stillConnected = Array.isArray(accounts) && accounts.length > 0;
     return {
-      revoked: true,
-      message: "Wallet account permission was revoked by the provider.",
+      revoked: !stillConnected,
+      message: stillConnected
+        ? "GenForge cleared the local wallet session, but the wallet provider still reports connected accounts."
+        : "Wallet account permission was revoked by the provider.",
     };
   } catch {
     return {
       revoked: false,
       message:
-        "The wallet provider did not expose permission revocation, so GenForge cleared the local wallet session.",
+        "GenForge cleared the local wallet session. This wallet does not allow the app to revoke permissions directly.",
     };
   }
 }

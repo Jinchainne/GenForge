@@ -1,20 +1,20 @@
 # GenForge
 
-GenForge is a GenLayer-native builder submission review console for:
+GenForge is a GenLayer-native trade document adjudication console for:
 
-- public GitHub project review against builder milestone criteria
-- bounded evidence packets for validator consensus
-- appeal or dispute dossiers when a review needs escalation
-- wallet-signed reward token records for accepted builder tracks
+- goods purchase and sale disputes
+- purchase orders, invoices, bills of lading, packing lists, and trade correspondence
+- bounded buyer/seller evidence packets for validator consensus
+- wallet-signed settlement or credit token records after accepted cases
 
-It performs a bounded review pipeline:
+It performs a bounded trade-case pipeline:
 
-1. Read-only GitHub intake without executing submitted code
-2. Deterministic readiness and rejection-gate checks
-3. Evidence, confidence, scoring, and remediation generation
-4. Bounded GenLayer request construction
-5. Wallet-signed submission to live GenLayer Intelligent Contracts
-6. Receipt tracking, appeal packet preparation, and reward token recording
+1. Import or enter commercial document evidence
+2. Structure buyer and seller positions
+3. Run deterministic readiness checks for document depth and contract anchoring
+4. Build a bounded GenLayer adjudication request
+5. Submit the case to live GenLayer Intelligent Contracts with a browser wallet
+6. Track receipts and prepare settlement or service-credit records
 
 ## Workspace
 
@@ -22,7 +22,7 @@ It performs a bounded review pipeline:
 - Shared schemas: `packages/domain`
 - Evidence engine: `packages/evidence`
 - Deterministic rules: `packages/rules`
-- GitHub intake: `packages/github-adapter`
+- Legacy GitHub intake: `packages/github-adapter`
 - Confidence engine: `packages/confidence`
 - Evaluation helpers: `packages/evaluations`
 - GenLayer client boundary: `packages/genlayer-client`
@@ -41,11 +41,11 @@ The app is served from `apps/web` and remains compatible with Vercel root-direct
 
 ## Environment
 
-Required for GitHub intake:
+Optional for legacy GitHub repository intake:
 
 - `GITHUB_TOKEN` is optional but recommended for higher rate limits.
 
-Optional for live GenLayer submission:
+Optional for operator-side live GenLayer submission:
 
 - `GENLAYER_MODE=sdk`
 - `GENLAYER_NETWORK`
@@ -53,7 +53,7 @@ Optional for live GenLayer submission:
 - `GENLAYER_RPC_URL`
 - `GENLAYER_PRIVATE_KEY`
 
-Optional for browser-wallet enterprise dispute submission:
+Optional for browser-wallet trade dispute submission:
 
 - `NEXT_PUBLIC_GENLAYER_NETWORK`
 - `NEXT_PUBLIC_GENLAYER_RPC_URL`
@@ -100,7 +100,7 @@ Recommended Vercel environment variables:
 - `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD`
 - `NEXT_PUBLIC_GENLAYER_STUDIO_URL`
 
-The repository includes [apps/web/vercel.json](/abs/path/C:/Users/Asus/Desktop/genforge-submission/apps/web/vercel.json:1) to pin API max duration for the review and dispute routes.
+The repository includes `apps/web/vercel.json` to pin API max duration for the review and dispute routes.
 
 Observed production constraint on July 17, 2026:
 
@@ -111,9 +111,9 @@ Observed production constraint on July 17, 2026:
 
 1. Fund the active operator account with GEN.
 2. Run `genlayer network studionet` or the intended target network.
-3. Deploy `contracts/genforge_judge/review_submission.py`.
-4. Deploy `contracts/genforge_judge/resolve_enterprise_dispute.py`.
-5. Deploy `contracts/genforge_judge/deploy_project_token.py` for Token Launch.
+3. Deploy `contracts/genforge_judge/resolve_enterprise_dispute.py` for trade adjudication.
+4. Deploy `contracts/genforge_judge/deploy_project_token.py` for settlement or credit token records.
+5. Deploy `contracts/genforge_judge/review_submission.py` only if enabling the legacy repository-review route.
 6. Copy the real contract addresses into Vercel as `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS`, `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`, and `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS`.
 7. Configure `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD` for the factory write method, and optionally `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD` for receipt readback.
 8. Redeploy `apps/web`, then verify wallet submission and receipt tracking from the browser UI.
@@ -159,10 +159,9 @@ npm run build:genforge
 
 ## Limitations
 
-- Repository review remains limited to public GitHub repositories.
-- Repository source is inspected read-only through bounded API calls.
+- Imported binary documents such as PDF, DOCX, XLSX, and images are recorded as document evidence requiring manual content review; the browser import does not pretend to OCR or parse them.
+- The legacy repository-review route remains limited to public GitHub repositories and is no longer the primary workspace.
 - Live wallet writes still require deployed GenLayer contract addresses and funded accounts.
 - Studio and Explorer verification are still manual unless a live GenLayer environment is configured.
-- The included contract scaffolds have not been deployed from this workspace because the available local accounts were unfunded on July 17, 2026.
-- OBSERVED: the local CLI is configured for `studionet`, but the active account showed `0 GEN` on July 17, 2026, which blocks real deployment from this workspace until it is funded.
-- Contract direct/integration tests exist for both review and enterprise dispute flows, but live Studio-backed execution still depends on a local or hosted GenLayer environment plus Python dependencies from `contracts/genforge_judge/requirements.txt`.
+- OBSERVED on July 19, 2026: the Studionet trade dispute, token factory, and legacy review contracts have been deployed and configured in production.
+- Contract direct/integration tests exist for review, trade dispute, and token factory flows, but live Studio-backed execution still depends on a local or hosted GenLayer environment plus Python dependencies from `contracts/genforge_judge/requirements.txt`.

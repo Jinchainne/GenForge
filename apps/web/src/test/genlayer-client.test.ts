@@ -165,8 +165,9 @@ describe("submitGenLayerReview", () => {
         if (method === "wallet_revokePermissions") {
           revokeCalled = true;
         }
-        return null;
+        return [];
       },
+      isMetaMask: true,
     });
 
     expect(revokeCalled).toBe(true);
@@ -178,10 +179,27 @@ describe("submitGenLayerReview", () => {
       request: async () => {
         throw new Error("unsupported method");
       },
+      isMetaMask: true,
     });
 
     expect(result.revoked).toBe(false);
     expect(result.message).toContain("cleared the local wallet session");
+  });
+
+  it("clears local session without unsupported revoke calls for generic wallets", async () => {
+    let revokeCalled = false;
+    const result = await disconnectBrowserWallet({
+      request: async ({ method }: { method: string }) => {
+        if (method === "wallet_revokePermissions") {
+          revokeCalled = true;
+        }
+        return ["0xabc"];
+      },
+    });
+
+    expect(revokeCalled).toBe(false);
+    expect(result.revoked).toBe(false);
+    expect(result.message).toContain("cleared in GenForge");
   });
 
   it("submits through a browser wallet and returns a pending consensus state after acceptance", async () => {

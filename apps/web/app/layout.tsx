@@ -14,9 +14,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GenForge Builder Review Console",
+  title: "GenForge Trade Document Console",
   description:
-    "GenLayer builder submission review, validator consensus, appeal packets, and reward token records.",
+    "Goods-trade document intake, buyer-seller evidence packets, GenLayer adjudication, and settlement token records.",
 };
 
 export default function RootLayout({

@@ -4,21 +4,18 @@ import { useState } from "react";
 import {
   getDisputeSubmissionConfigIssues,
   getPublicGenLayerConfig,
-  getSubmissionConfigIssues,
   getTokenDeploymentConfigIssues,
   getWalletConfigIssues,
 } from "@/lib/public-genlayer-config";
 import { ContractOpsDashboard } from "./contract-ops-dashboard";
 import { EnterpriseDisputeDashboard } from "./enterprise-dispute-dashboard";
-import { ReviewDashboard } from "./review-dashboard";
 import { TokenLaunchDashboard } from "./token-launch-dashboard";
 
 type Workspace =
-  | "repo_review"
   | "enterprise_dispute"
   | "contract_ops"
   | "token_launch";
-type TreeGroupId = "cases" | "chain" | "evidence";
+type TreeGroupId = "cases" | "chain";
 
 const workspaceNodes: Array<{
   id: Workspace;
@@ -28,20 +25,12 @@ const workspaceNodes: Array<{
   summary: string;
 }> = [
   {
-    id: "repo_review",
-    group: "evidence",
-    label: "Project Review",
-    code: "SUB-01",
-    summary:
-      "Validate GenLayer builder submissions against milestone rules, evidence, and on-chain consensus.",
-  },
-  {
     id: "enterprise_dispute",
     group: "cases",
-    label: "Appeal Dossier",
-    code: "APL-02",
+    label: "Trade Case",
+    code: "DOC-01",
     summary:
-      "Prepare bounded evidence for reviewer disputes, counterparty notice, and validator adjudication.",
+      "Import purchase orders, invoices, bills of lading, and correspondence for GenLayer adjudication.",
   },
   {
     id: "contract_ops",
@@ -54,10 +43,10 @@ const workspaceNodes: Array<{
   {
     id: "token_launch",
     group: "chain",
-    label: "Reward Token",
+    label: "Settlement Token",
     code: "TOK-04",
     summary:
-      "Record wallet-signed reward token launches for accepted GenLayer builder tracks.",
+      "Record wallet-signed settlement or credit token requests after a trade case is accepted.",
   },
 ];
 
@@ -68,31 +57,24 @@ const treeGroups: Array<{
 }> = [
   {
     id: "cases",
-    label: "Appeals",
-    description: "Dispute packets for manual review",
-  },
-  {
-    id: "evidence",
-    label: "Submission Gate",
-    description: "Repo evidence, scoring, and consensus",
+    label: "Trade Desk",
+    description: "Goods, contracts, and document evidence",
   },
   {
     id: "chain",
     label: "Chain Controls",
-    description: "Wallet, contracts, receipts, rewards",
+    description: "Wallet, contracts, receipts, settlement",
   },
 ];
 
 export function WorkspaceShell() {
-  const [workspace, setWorkspace] = useState<Workspace>("repo_review");
+  const [workspace, setWorkspace] = useState<Workspace>("enterprise_dispute");
   const [openGroups, setOpenGroups] = useState<Record<TreeGroupId, boolean>>({
     cases: true,
-    evidence: true,
     chain: true,
   });
   const publicConfig = getPublicGenLayerConfig();
   const walletIssues = getWalletConfigIssues(publicConfig);
-  const reviewSubmissionIssues = getSubmissionConfigIssues(publicConfig);
   const disputeSubmissionIssues = getDisputeSubmissionConfigIssues(publicConfig);
   const tokenDeploymentIssues = getTokenDeploymentConfigIssues(publicConfig);
   const activeNode =
@@ -108,15 +90,7 @@ export function WorkspaceShell() {
           : walletIssues.join(" "),
     },
     {
-      label: "Repository contract",
-      status: reviewSubmissionIssues.length === 0 ? "ready" : "needs env",
-      detail:
-        reviewSubmissionIssues.length === 0
-          ? publicConfig.contractAddress ?? "Configured"
-          : "Awaiting NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS.",
-    },
-    {
-      label: "Dispute contract",
+      label: "Trade dispute contract",
       status: disputeSubmissionIssues.length === 0 ? "ready" : "needs env",
       detail:
         disputeSubmissionIssues.length === 0
@@ -124,7 +98,7 @@ export function WorkspaceShell() {
           : "Awaiting NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS.",
     },
     {
-      label: "Token factory",
+      label: "Settlement token factory",
       status: tokenDeploymentIssues.length === 0 ? "ready" : "needs env",
       detail:
         tokenDeploymentIssues.length === 0
@@ -158,15 +132,15 @@ export function WorkspaceShell() {
           </span>
           <div>
             <div className="eyebrow">GenForge</div>
-            <strong>Builder review console</strong>
+            <strong>Trade document console</strong>
           </div>
         </div>
 
         <section className="workspace-purpose" aria-label="Product purpose">
-          <strong>Use this to judge GenLayer builder projects.</strong>
+          <strong>Use this for goods-trade dispute evidence.</strong>
           <p>
-            Collect repo evidence, enforce milestone gates, submit bounded
-            decisions to Intelligent Contracts, then track receipts and rewards.
+            Import commercial documents, structure buyer and seller positions,
+            submit bounded cases to GenLayer, then track receipts and settlement.
           </p>
         </section>
 
@@ -272,7 +246,6 @@ export function WorkspaceShell() {
           {workspace === "enterprise_dispute" ? (
             <EnterpriseDisputeDashboard />
           ) : null}
-          {workspace === "repo_review" ? <ReviewDashboard /> : null}
           {workspace === "contract_ops" ? <ContractOpsDashboard /> : null}
           {workspace === "token_launch" ? <TokenLaunchDashboard /> : null}
         </section>
