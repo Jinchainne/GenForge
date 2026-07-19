@@ -1,6 +1,13 @@
 [
   {
     "date": "2026-07-19",
+    "macrostructure": "Technical Dossier",
+    "theme": "modern-minimal",
+    "enrichment": "architecture SVG and polished README hero",
+    "brief": "Upgrade README into a technology-forward GenForge product dossier."
+  },
+  {
+    "date": "2026-07-19",
     "macrostructure": "Workbench",
     "theme": "modern-minimal",
     "enrichment": "custom SVG logo and README workflow diagram",

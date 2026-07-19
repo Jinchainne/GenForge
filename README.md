@@ -1,104 +1,217 @@
-# GenForge
+<p align="center">
+  <img src="apps/web/public/genforge-logo.svg" width="96" height="96" alt="GenForge logo" />
+</p>
 
-![GenForge workflow](docs/readme-flow.svg)
+<h1 align="center">GenForge</h1>
 
-GenForge is a GenLayer-native console for goods-trade document disputes. It helps a buyer, seller, or operator turn commercial documents into a bounded adjudication packet, submit that packet to a deployed GenLayer Intelligent Contract, track the receipt, and record the resulting settlement or service-credit token request.
+<p align="center">
+  <strong>Trade document adjudication on GenLayer</strong><br />
+  Goods purchase disputes, commercial evidence packets, wallet-signed contract writes, receipt tracking, and settlement records.
+</p>
 
-It is built for disputes around purchase orders, invoices, bills of lading, packing lists, delivery evidence, payment release, short shipment, late delivery, and counterparty responses.
+<p align="center">
+  <a href="https://genforge-seven.vercel.app/">Live App</a>
+  ·
+  <a href="https://docs.genlayer.com/api-references/genlayer-js">GenLayerJS</a>
+  ·
+  <a href="https://docs.genlayer.com/developers/intelligent-contracts/equivalence-principle">Equivalence Principle</a>
+</p>
 
-## What This Tool Does
+<p align="center">
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-111827?style=for-the-badge" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-2563EB?style=for-the-badge" />
+  <img alt="GenLayer" src="https://img.shields.io/badge/GenLayer-Intelligent%20Contracts-00836D?style=for-the-badge" />
+  <img alt="Wallet" src="https://img.shields.io/badge/Wallet-writeContract-0F766E?style=for-the-badge" />
+</p>
+
+![GenForge system architecture](docs/system-architecture.svg)
+
+## Mission
+
+GenForge is a GenLayer-native command surface for goods-trade disputes. It turns commercial documents into a bounded adjudication packet, sends that packet to a deployed Intelligent Contract, and keeps the wallet, transaction, receipt, and settlement state visible.
+
+The target workflow is not generic AI review. It is trade operations:
+
+- purchase orders and sales contracts
+- invoices, bills of lading, packing lists, inspection records
+- buyer claims, seller responses, delivery disputes, payment release disputes
+- GenLayer validator adjudication for liability, remedy, and request-more-info outcomes
+- settlement or service-credit records after an accepted case
+
+## Product Surface
 
 ```text
-GenForge
+GenForge Workbench
 |
 +-- Trade Case
 |   |
-|   +-- Import PO / invoice / B/L / packing list / correspondence
-|   +-- Structure buyer claim, seller response, remedy, amount, dates
-|   +-- Run deterministic readiness checks
-|   +-- Build a bounded GenLayer adjudication packet
-|   +-- Submit the accepted packet on-chain with a browser wallet
+|   +-- Import commercial documents
+|   +-- Structure buyer / seller positions
+|   +-- Build the bounded adjudication packet
+|   +-- Submit the packet to GenLayer after readiness passes
 |
 +-- Runtime Ops
 |   |
-|   +-- Show public GenLayer network configuration
-|   +-- Show deployed contract addresses and blockers
-|   +-- Show operator deploy commands without pretending they ran
+|   +-- Show configured network and contract addresses
+|   +-- Show browser-wallet readiness
+|   +-- Show operator deploy blockers honestly
 |
 +-- Settlement Token
     |
-    +-- Prepare settlement / service-credit record
-    +-- Sign the request with the connected wallet
-    +-- Write to the configured GenLayer token factory contract
-    +-- Refresh and inspect the real transaction receipt
+    +-- Prepare a settlement or credit record
+    +-- Sign with the connected wallet
+    +-- Write to the configured GenLayer factory
+    +-- Track the receipt before claiming finality
 ```
 
-GenForge is not a generic AI page and not a simulated wallet demo. Browser submissions go through `genlayer-js` `writeContract(...)`, and transaction state is shown as blocked, pending, finalized, failed, or unavailable based on the real client path.
+## Why This Belongs On GenLayer
 
-## Why GenLayer Fits
+Traditional smart contracts are good at deterministic rules. Trade disputes are not only deterministic. A purchase order may be clear, but the real decision often depends on messy evidence: delivery context, correspondence, Incoterms, claimed exceptions, short shipment narratives, and whether payment should be released or adjusted.
 
-Goods-trade disputes often require judgment over messy, unstructured evidence: a purchase order says one quantity, a bill of lading says another, emails add context, and payment or delivery responsibility may be disputed. A normal deterministic app can organize the files, but it should not unilaterally decide liability or settlement.
+GenForge separates the work:
 
-GenForge uses GenLayer where that judgment matters:
+| Layer | Responsibility | Why it matters |
+| --- | --- | --- |
+| Deterministic app | Normalize documents, parties, dates, amounts, and missing fields | Keeps untrusted evidence bounded before contract submission |
+| GenLayer Intelligent Contract | Resolve the commercial question with criteria-based validator consensus | Prevents one server or one party from being the sole adjudicator |
+| Browser wallet | Signs the write transaction | The user explicitly authorizes the on-chain action |
+| Receipt tracker | Reads accepted/finalized/failed transaction state | The UI cannot pretend a case succeeded without network evidence |
+| Settlement registry | Records a settlement or credit request | Keeps post-decision settlement state auditable without claiming value transfer |
 
-- The deterministic frontend prepares a bounded evidence packet.
-- The Intelligent Contract asks for a non-comparative adjudication result through GenLayer validator consensus.
-- The contract stores the resulting disposition and payable adjustment.
-- The frontend reads the resulting transaction and receipt state instead of inventing success.
+## On-Chain Proof Map
 
-## Reviewer Gate Map
+| Reviewer concern | Code evidence |
+| --- | --- |
+| Real GenLayer contract exists | `contracts/genforge_judge/resolve_enterprise_dispute.py` |
+| Meaningful non-deterministic adjudication | `gl.eq_principle.prompt_non_comparative(...)` in `resolve_dispute` |
+| Contract writes state | `@gl.public.write def resolve_dispute(...)` stores `self.resolutions[caseId]` |
+| Contract exposes readback | `get_resolution(...)` and `get_resolution_judgment(...)` |
+| Frontend writes the submitted contract | `packages/genlayer-client/src/index.ts` calls `writeContract(...)` |
+| Frontend tracks real receipt | `waitForTransactionReceipt(...)` is used for submission and refresh paths |
+| Wallet is not localStorage simulation | wallet state comes from browser provider account flow |
+| Settlement is honest | token factory records settlement metadata; it does not claim GEN or ERC-20 value moved |
 
-The project is written to avoid the common rejection reasons shown in the review screenshots.
+OBSERVED: The current browser write path no longer depends on a wallet-specific snap method before transaction submission. Generic browser wallets can connect by account and network-switch methods, then `writeContract(...)` is the signing path.
+
+## Workflow
+
+![GenForge workflow](docs/readme-flow.svg)
 
 ```text
-Gate
-|
-+-- Real GenLayer contract in repo
-|   +-- contracts/genforge_judge/resolve_enterprise_dispute.py
-|   +-- contracts/genforge_judge/deploy_project_token.py
-|
-+-- Meaningful non-deterministic decision
-|   +-- resolve_dispute uses gl.eq_principle.prompt_non_comparative(...)
-|   +-- validator consensus determines the commercial disposition
-|
-+-- App-to-contract workflow
-|   +-- packages/genlayer-client/src/index.ts
-|   +-- submitBrowserContractJson(...)
-|   +-- writeContract(...)
-|   +-- waitForTransactionReceipt(...)
-|
-+-- No fake wallet / no local-only success
-|   +-- wallet connection uses the browser provider
-|   +-- generic wallets are not forced through a wallet-specific snap path
-|   +-- UI does not create fake transaction hashes
-|
-+-- Settlement honesty
-    +-- token factory records settlement or credit requests
-    +-- it does not claim that ERC-20 value or GEN was transferred
+1. Import
+   PO, invoice, bill of lading, packing list, email thread, inspection note
+
+2. Bound
+   buyer claim + seller response + requested remedy + evidence summary
+
+3. Gate
+   deterministic readiness checks block thin or unsafe packets
+
+4. Sign
+   browser wallet signs the GenLayer write transaction
+
+5. Adjudicate
+   Intelligent Contract applies non-comparative validator consensus
+
+6. Track
+   receipt status remains pending/finalized/failed until verified
+
+7. Settle
+   settlement token registry records the accepted trade resolution outcome
 ```
 
-## How To Use The App
+## How To Use
 
-1. Open the deployed app or run it locally.
-2. Click `Connect Wallet` in the top-right header.
-3. Approve the wallet account and GenLayer network switch when prompted.
-4. In `Trade Case`, import or paste the trade documents and correspondence.
-5. Click `Build Trade Case`.
-6. Review the generated bounded packet and readiness status.
-7. Open the `Chain` tab inside the generated case.
-8. Click `Submit Trade Case On-Chain`.
-9. Approve the wallet signature.
-10. Refresh the receipt until the GenLayer transaction is finalized or clearly failed.
-11. Use `Settlement Token` only after a case has an accepted settlement or credit basis.
+1. Open `https://genforge-seven.vercel.app/`.
+2. Connect a funded browser wallet from the top-right control.
+3. Open `Trade Case`.
+4. Import or paste the commercial documents and correspondence.
+5. Build the case packet.
+6. Review readiness and missing evidence.
+7. Open the case `Chain` tab.
+8. Submit the case on-chain and approve the wallet signature.
+9. Refresh the receipt until the result is finalized or fails.
+10. Open `Settlement Token` only after the trade case has an accepted settlement basis.
 
-## Local Development
+## Tech Stack
+
+```text
+Runtime
+|
++-- Next.js App Router
++-- React client components
++-- TypeScript strict mode
++-- Vercel production deployment
+
+GenLayer
+|
++-- genlayer-js browser client
++-- writeContract / readContract / waitForTransactionReceipt
++-- Python Intelligent Contracts
++-- genvm-linter validation
+
+Quality
+|
++-- Vitest UI and SDK tests
++-- deterministic rule tests
++-- direct/integration contract test harness
++-- Hallmark-stamped responsive UI
+```
+
+## Repository Map
+
+```text
+.
+|
++-- apps/
+|   +-- web/
+|       +-- app/
+|       |   +-- page.tsx
+|       |   +-- layout.tsx
+|       |   +-- globals.css
+|       |
+|       +-- public/
+|       |   +-- genforge-logo.svg
+|       |
+|       +-- src/
+|           +-- components/
+|           |   +-- workspace-shell.tsx
+|           |   +-- enterprise-dispute-dashboard.tsx
+|           |   +-- contract-ops-dashboard.tsx
+|           |   +-- token-launch-dashboard.tsx
+|           |
+|           +-- lib/
+|           |   +-- public-genlayer-config.ts
+|           |   +-- dispute-domain.ts
+|           |
+|           +-- test/
+|
++-- contracts/
+|   +-- genforge_judge/
+|       +-- resolve_enterprise_dispute.py
+|       +-- deploy_project_token.py
+|       +-- review_submission.py
+|
++-- packages/
+|   +-- genlayer-client/
+|   +-- domain/
+|   +-- evidence/
+|   +-- rules/
+|   +-- reports/
+|
++-- docs/
+|   +-- system-architecture.svg
+|   +-- readme-flow.svg
+```
+
+## Local Run
 
 ```bash
 npm install
 npm --prefix apps/web run dev
 ```
 
-Useful checks:
+## Verification
 
 ```bash
 npm run lint:genforge
@@ -108,14 +221,14 @@ npm run build:genforge
 npm run lint:contract
 ```
 
-Contract tests:
+Contract harness:
 
 ```bash
 npm run test:contract:direct
 npm run test:contract:integration
 ```
 
-`test:contract:integration` requires a working GenLayer test environment. Browser wallet writes require a funded wallet account on the configured GenLayer network.
+MANUAL_REVIEW_REQUIRED: `test:contract:direct` currently depends on the local GenLayer test harness behavior on the host OS. On Windows, this workspace has observed a `gltest` temp-file unlink `PermissionError`; contract lint still validates the three contracts.
 
 ## Environment
 
@@ -138,7 +251,7 @@ GITHUB_TOKEN=...
 NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS=0x...
 ```
 
-Optional operator-side SDK submission:
+Optional operator SDK/deploy path:
 
 ```bash
 GENLAYER_MODE=sdk
@@ -146,85 +259,39 @@ GENLAYER_NETWORK=studionet
 GENLAYER_CONTRACT_ADDRESS=0x...
 GENLAYER_RPC_URL=https://studio.genlayer.com/api
 GENLAYER_PRIVATE_KEY=0x...
-```
-
-Optional operator deploy button:
-
-```bash
 GENFORGE_ENABLE_OPERATOR_DEPLOY=true
 ```
 
-`GENLAYER_PRIVATE_KEY` must stay server-side. `NEXT_PUBLIC_*` values are intentionally visible to the browser because the user wallet signs the transaction.
+`GENLAYER_PRIVATE_KEY` must remain server-side. Public contract addresses and public RPC values use `NEXT_PUBLIC_*` because browser wallet writes need those values client-side.
 
-## Repository Structure
-
-```text
-.
-|
-+-- apps/
-|   +-- web/
-|       +-- app/                  Next.js app router, metadata, global UI CSS
-|       +-- public/               GenForge logo assets
-|       +-- src/components/       Trade case, runtime ops, settlement token UI
-|       +-- src/lib/              public GenLayer config and workflow helpers
-|       +-- src/test/             UI, SDK, API, rule tests
-|
-+-- contracts/
-|   +-- genforge_judge/
-|       +-- resolve_enterprise_dispute.py
-|       +-- deploy_project_token.py
-|       +-- review_submission.py
-|
-+-- packages/
-|   +-- genlayer-client/          browser and server GenLayer SDK boundary
-|   +-- domain/                   shared request/result schemas
-|   +-- evidence/                 bounded evidence extraction
-|   +-- rules/                    deterministic project and workflow checks
-|   +-- reports/                  report formatting helpers
-|
-+-- tests/
-|   +-- direct/                   direct-mode contract tests
-|   +-- integration/              GenLayer integration test harness
-|
-+-- docs/
-|   +-- readme-flow.svg           README workflow diagram
-```
-
-## On-Chain Behavior
-
-OBSERVED in code:
-
-- `resolve_dispute` is a public write method.
-- The dispute contract uses `gl.eq_principle.prompt_non_comparative(...)` for the material commercial decision.
-- The result is stored in `self.resolutions` and can be read through public view methods.
-- Browser submissions use `writeContract(...)` and receipt tracking uses `waitForTransactionReceipt(...)`.
-- Wallet connection no longer requires a wallet-specific snap method; generic browser wallets can use normal account and network-switch methods.
-
-MISSING unless verified manually:
-
-- A live wallet signature from your account.
-- Your account balance for GenLayer fees.
-- The final explorer/studio receipt for a specific transaction.
-
-## Production Deployment
-
-Production URL:
+## Production Notes
 
 ```text
-https://genforge-seven.vercel.app/
+Live app: https://genforge-seven.vercel.app/
+Vercel root directory: apps/web
 ```
 
-Vercel root directory:
+Because the app imports monorepo packages from `../../packages/*`, Vercel must include source files outside the root directory.
 
-```text
-apps/web
-```
+OBSERVED: Hosted Vercel runtime is not treated as a contract deployment machine. If `/api/ops/genlayer` reports `spawn genlayer ENOENT`, deploy contracts from a secure operator environment with the GenLayer CLI and a funded account, then write the deployed addresses back into Vercel environment variables.
 
-Because the app imports local monorepo packages from `../../packages/*`, enable Vercel's `Include source files outside of the Root Directory`.
+## Truth Boundaries
 
-OBSERVED limitation: Vercel runtime is not the contract deployment runner. If `/api/ops/genlayer` reports `spawn genlayer ENOENT`, deploy contracts from a secure operator machine or CI runner that has the GenLayer CLI installed and a funded account, then write the real addresses back into Vercel environment variables.
+OBSERVED in repository:
 
-## Official Sources Checked
+- Trade dispute contract uses `gl.eq_principle.prompt_non_comparative(...)`.
+- Browser client uses `writeContract(...)` and `waitForTransactionReceipt(...)`.
+- UI uses explicit blocked, pending, finalized, failed, and unavailable states.
+- Settlement token factory records a settlement or credit request.
+
+MISSING unless manually verified:
+
+- A live wallet signature from the user's account.
+- The account's GEN balance for network fees.
+- The final transaction receipt for a specific user-submitted case.
+- Explorer/Studio proof for any new deployment address.
+
+## Official References Checked
 
 Checked on 2026-07-19:
 
@@ -236,7 +303,7 @@ Checked on 2026-07-19:
 
 ## Limitations
 
-- Binary imports such as PDF, DOCX, XLSX, PNG, and JPG are tracked as evidence requiring manual review; the browser import does not pretend to OCR or fully parse them.
-- The settlement token factory records a settlement or credit request. It does not claim that real ERC-20 value, GEN, or escrowed funds moved.
-- The legacy GitHub submission review route remains in the repo, but the primary product surface is goods-trade document adjudication.
-- Actual on-chain proof requires a real wallet signature, network fees, and a final GenLayer receipt.
+- Binary imports such as PDF, DOCX, XLSX, PNG, and JPG are tracked as evidence requiring manual review; the browser does not pretend to OCR or fully parse them.
+- Settlement records are registry entries. They are not represented as confirmed value transfers.
+- The legacy GitHub submission review route remains in the repository, but the primary product is goods-trade document adjudication.
+- On-chain proof requires a real wallet signature, fees, and a final GenLayer receipt.

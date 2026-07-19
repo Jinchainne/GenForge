@@ -1,0 +1,69 @@
+<svg width="1280" height="620" viewBox="0 0 1280 620" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">GenForge system architecture</title>
+  <desc id="desc">A technical system diagram for the GenForge trade document adjudication platform.</desc>
+  <rect width="1280" height="620" rx="32" fill="#071411"/>
+  <path d="M56 90H1224" stroke="#17483E" stroke-width="2"/>
+  <path d="M56 530H1224" stroke="#17483E" stroke-width="2"/>
+  <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace">
+    <text x="56" y="58" fill="#DDF7EF" font-size="24" font-weight="700">GenForge Architecture</text>
+    <text x="958" y="58" fill="#80CDBB" font-size="14">goods trade adjudication / studionet-ready</text>
+  </g>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#80CDBB"/>
+    </marker>
+  </defs>
+  <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14">
+    <g transform="translate(64 132)">
+      <rect width="250" height="112" rx="18" fill="#0D221D" stroke="#2E6B5E" stroke-width="2"/>
+      <text x="22" y="34" fill="#F7FAF7" font-size="16" font-weight="700">Trade documents</text>
+      <text x="22" y="62" fill="#A7D8CD">PO / invoice / B/L</text>
+      <text x="22" y="86" fill="#A7D8CD">packing list / emails</text>
+    </g>
+    <g transform="translate(64 336)">
+      <rect width="250" height="112" rx="18" fill="#0D221D" stroke="#2E6B5E" stroke-width="2"/>
+      <text x="22" y="34" fill="#F7FAF7" font-size="16" font-weight="700">Commercial positions</text>
+      <text x="22" y="62" fill="#A7D8CD">buyer claim</text>
+      <text x="22" y="86" fill="#A7D8CD">seller response</text>
+    </g>
+    <g transform="translate(400 184)">
+      <rect width="270" height="198" rx="20" fill="#102C25" stroke="#47A891" stroke-width="2"/>
+      <text x="24" y="34" fill="#F7FAF7" font-size="16" font-weight="700">Next.js workbench</text>
+      <text x="24" y="70" fill="#BFE9DE">deterministic readiness</text>
+      <text x="24" y="98" fill="#BFE9DE">bounded packet builder</text>
+      <text x="24" y="126" fill="#BFE9DE">wallet status model</text>
+      <text x="24" y="154" fill="#BFE9DE">receipt state renderer</text>
+    </g>
+    <g transform="translate(756 118)">
+      <rect width="258" height="132" rx="20" fill="#0D221D" stroke="#80CDBB" stroke-width="2"/>
+      <text x="24" y="36" fill="#F7FAF7" font-size="16" font-weight="700">Browser wallet</text>
+      <text x="24" y="70" fill="#A7D8CD">account + provider</text>
+      <text x="24" y="96" fill="#A7D8CD">network switch</text>
+    </g>
+    <g transform="translate(756 328)">
+      <rect width="258" height="132" rx="20" fill="#0D221D" stroke="#80CDBB" stroke-width="2"/>
+      <text x="24" y="36" fill="#F7FAF7" font-size="16" font-weight="700">GenLayer client</text>
+      <text x="24" y="70" fill="#A7D8CD">writeContract</text>
+      <text x="24" y="96" fill="#A7D8CD">waitForTransactionReceipt</text>
+    </g>
+    <g transform="translate(1082 184)">
+      <rect width="142" height="198" rx="20" fill="#DDF7EF" stroke="#80CDBB" stroke-width="2"/>
+      <text x="22" y="38" fill="#071411" font-size="16" font-weight="700">Contracts</text>
+      <text x="22" y="76" fill="#123D34">resolve</text>
+      <text x="22" y="104" fill="#123D34">dispute</text>
+      <text x="22" y="144" fill="#123D34">settlement</text>
+      <text x="22" y="172" fill="#123D34">registry</text>
+    </g>
+  </g>
+  <g stroke="#80CDBB" stroke-width="3" marker-end="url(#arrow)">
+    <path d="M314 188C350 196 369 211 398 238"/>
+    <path d="M314 392C350 372 370 346 398 314"/>
+    <path d="M670 238C710 208 722 190 752 184"/>
+    <path d="M670 314C706 340 722 374 752 394"/>
+    <path d="M1014 394C1042 356 1058 327 1078 302"/>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="13" fill="#80CDBB">
+    <text x="408" y="470">state labels are explicit: blocked / pending / finalized / failed</text>
+    <text x="408" y="496">no local-only receipt, no invented transfer, no silent success</text>
+  </g>
+</svg>
