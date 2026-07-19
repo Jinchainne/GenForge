@@ -217,6 +217,7 @@ button:disabled {
 .tree-group-button:focus-visible,
 .tree-node:focus-visible,
 .workspace-tab:focus-visible,
+.wallet-button:focus-visible,
 .secondary-button:focus-visible,
 .action-row button:focus-visible {
   outline: 2px solid var(--color-focus);
@@ -360,6 +361,71 @@ button:disabled {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: end;
+}
+
+.workspace-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.wallet-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px;
+  border: 1px solid var(--color-rule);
+  border-radius: 8px;
+  background: var(--color-panel-strong);
+}
+
+.wallet-dot {
+  width: 9px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--color-ink-soft);
+}
+
+.wallet-connected {
+  background: var(--color-accent);
+}
+
+.wallet-connecting {
+  background: var(--color-warn);
+}
+
+.wallet-error,
+.wallet-missing_provider {
+  background: var(--color-danger);
+}
+
+.wallet-label {
+  max-width: 152px;
+  color: var(--color-ink-soft);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wallet-button {
+  min-height: 32px;
+  border-radius: 6px;
+  border: 0;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-weight: 700;
+  padding: 0 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wallet-button.secondary-button {
+  min-height: 32px;
+  border-radius: 6px;
+  padding: 0 10px;
 }
 
 .workspace-tab {
@@ -1233,6 +1299,10 @@ button:disabled {
     justify-content: start;
   }
 
+  .workspace-actions {
+    justify-items: start;
+  }
+
   .field-grid {
     grid-template-columns: 1fr;
   }
@@ -1256,6 +1326,11 @@ button:disabled {
     display: grid;
     grid-template-columns: 1fr;
     width: 100%;
+  }
+
+  .wallet-control {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .workspace-tab {

@@ -24,5 +24,8 @@ describe("WorkspaceShell", () => {
     expect(screen.getByLabelText("Trade case title")).toBeInTheDocument();
     expect(screen.getByText("Import Documents")).toBeInTheDocument();
     expect(screen.getByText("Build Trade Case")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: "Connect Wallet" }),
+    ).toHaveLength(1);
   });
 });

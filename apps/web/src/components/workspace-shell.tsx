@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 import {
+  connectBrowserWallet,
+  disconnectBrowserWallet,
+  getBrowserWalletLabel,
+  isBrowserWalletAvailable,
+} from "@genforge/genlayer-client";
+import {
   getDisputeSubmissionConfigIssues,
   getPublicGenLayerConfig,
   getTokenDeploymentConfigIssues,
   getWalletConfigIssues,
 } from "@/lib/public-genlayer-config";
+import type { WalletConnectionState } from "@/lib/review-workflow";
 import { ContractOpsDashboard } from "./contract-ops-dashboard";
 import { EnterpriseDisputeDashboard } from "./enterprise-dispute-dashboard";
 import { TokenLaunchDashboard } from "./token-launch-dashboard";
@@ -29,24 +36,21 @@ const workspaceNodes: Array<{
     group: "cases",
     label: "Trade Case",
     code: "DOC-01",
-    summary:
-      "Import purchase orders, invoices, bills of lading, and correspondence for GenLayer adjudication.",
+    summary: "Import PO, invoice, B/L, packing list, and trade correspondence.",
   },
   {
     id: "contract_ops",
     group: "chain",
     label: "Runtime Ops",
     code: "OPS-03",
-    summary:
-      "Verify deployed Intelligent Contracts, public runtime config, wallet readiness, and operator commands.",
+    summary: "Contracts, wallet runtime, receipts, and operator commands.",
   },
   {
     id: "token_launch",
     group: "chain",
     label: "Settlement Token",
     code: "TOK-04",
-    summary:
-      "Record wallet-signed settlement or credit token requests after a trade case is accepted.",
+    summary: "Wallet-signed settlement or credit records.",
   },
 ];
 
@@ -73,12 +77,20 @@ export function WorkspaceShell() {
     cases: true,
     chain: true,
   });
+  const [walletBusy, setWalletBusy] = useState(false);
   const publicConfig = getPublicGenLayerConfig();
   const walletIssues = getWalletConfigIssues(publicConfig);
   const disputeSubmissionIssues = getDisputeSubmissionConfigIssues(publicConfig);
   const tokenDeploymentIssues = getTokenDeploymentConfigIssues(publicConfig);
   const activeNode =
     workspaceNodes.find((item) => item.id === workspace) ?? workspaceNodes[0];
+  const [wallet, setWallet] = useState<WalletConnectionState>({
+    status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
+    message: isBrowserWalletAvailable()
+      ? "Connect a wallet to sign GenLayer trade case and settlement requests."
+      : "No browser wallet provider was detected.",
+    providerLabel: getBrowserWalletLabel(),
+  });
 
   const registry = [
     {
@@ -123,6 +135,58 @@ export function WorkspaceShell() {
     });
   }
 
+  async function handleConnectWallet() {
+    if (!isBrowserWalletAvailable()) {
+      setWallet({
+        status: "missing_provider",
+        message: "No compatible browser wallet provider was detected.",
+        providerLabel: getBrowserWalletLabel(),
+      });
+      return;
+    }
+
+    setWalletBusy(true);
+    setWallet({
+      status: "connecting",
+      message: "Requesting wallet access for GenLayer trade operations.",
+      providerLabel: getBrowserWalletLabel(),
+    });
+
+    try {
+      const connection = await connectBrowserWallet({
+        network: publicConfig.network,
+        rpcUrl: publicConfig.rpcUrl,
+      });
+      setWallet({
+        status: "connected",
+        address: connection.address,
+        network: connection.network,
+        providerLabel: getBrowserWalletLabel(),
+        message: `${getBrowserWalletLabel()} connected on ${connection.network}.`,
+      });
+    } catch (error) {
+      setWallet({
+        status: "error",
+        providerLabel: getBrowserWalletLabel(),
+        message:
+          error instanceof Error ? error.message : "Failed to connect wallet.",
+      });
+    } finally {
+      setWalletBusy(false);
+    }
+  }
+
+  async function handleDisconnectWallet() {
+    setWalletBusy(true);
+    const result = await disconnectBrowserWallet();
+    setWallet({
+      status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
+      providerLabel: getBrowserWalletLabel(),
+      message: result.message,
+    });
+    setWalletBusy(false);
+  }
+
   return (
     <main className="workspace-shell">
       <aside className="workspace-nav" aria-label="GenForge workspace menu">
@@ -139,8 +203,8 @@ export function WorkspaceShell() {
         <section className="workspace-purpose" aria-label="Product purpose">
           <strong>Use this for goods-trade dispute evidence.</strong>
           <p>
-            Import commercial documents, structure buyer and seller positions,
-            submit bounded cases to GenLayer, then track receipts and settlement.
+            Import documents, structure buyer/seller claims, submit to GenLayer,
+            then track settlement.
           </p>
         </section>
 
@@ -219,21 +283,50 @@ export function WorkspaceShell() {
             <h1>{activeNode.label}</h1>
             <p>{activeNode.summary}</p>
           </div>
-          <div className="workspace-switcher" role="tablist" aria-label="Workspaces">
-            {workspaceNodes.map((node) => (
-              <button
-                key={node.id}
-                type="button"
-                className={
-                  workspace === node.id
-                    ? "workspace-tab workspace-tab-active"
-                    : "workspace-tab"
-                }
-                onClick={() => selectWorkspace(node.id)}
-              >
-                {node.label}
-              </button>
-            ))}
+          <div className="workspace-actions">
+            <div className="wallet-control" aria-label="Wallet connection">
+              <span className={`wallet-dot wallet-${wallet.status}`} />
+              <span className="wallet-label">
+                {wallet.address
+                  ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
+                  : wallet.providerLabel ?? "Wallet"}
+              </span>
+              {wallet.status === "connected" ? (
+                <button
+                  type="button"
+                  className="wallet-button secondary-button"
+                  onClick={handleDisconnectWallet}
+                  disabled={walletBusy}
+                >
+                  Disconnect
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="wallet-button"
+                  onClick={handleConnectWallet}
+                  disabled={walletBusy || wallet.status === "connecting"}
+                >
+                  {wallet.status === "connecting" ? "Connecting" : "Connect Wallet"}
+                </button>
+              )}
+            </div>
+            <div className="workspace-switcher" role="tablist" aria-label="Workspaces">
+              {workspaceNodes.map((node) => (
+                <button
+                  key={node.id}
+                  type="button"
+                  className={
+                    workspace === node.id
+                      ? "workspace-tab workspace-tab-active"
+                      : "workspace-tab"
+                  }
+                  onClick={() => selectWorkspace(node.id)}
+                >
+                  {node.label}
+                </button>
+              ))}
+            </div>
           </div>
         </header>
 
@@ -244,10 +337,22 @@ export function WorkspaceShell() {
           aria-live="polite"
         >
           {workspace === "enterprise_dispute" ? (
-            <EnterpriseDisputeDashboard />
+            <EnterpriseDisputeDashboard
+              wallet={wallet}
+              walletBusy={walletBusy}
+              onConnectWallet={handleConnectWallet}
+              onDisconnectWallet={handleDisconnectWallet}
+            />
           ) : null}
           {workspace === "contract_ops" ? <ContractOpsDashboard /> : null}
-          {workspace === "token_launch" ? <TokenLaunchDashboard /> : null}
+          {workspace === "token_launch" ? (
+            <TokenLaunchDashboard
+              wallet={wallet}
+              walletBusy={walletBusy}
+              onConnectWallet={handleConnectWallet}
+              onDisconnectWallet={handleDisconnectWallet}
+            />
+          ) : null}
         </section>
       </section>
     </main>

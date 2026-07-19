@@ -2,10 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 import {
-  connectBrowserWallet,
-  disconnectBrowserWallet,
-  getBrowserWalletLabel,
-  isBrowserWalletAvailable,
   submitBrowserContractJson,
   trackBrowserContractJsonTransaction,
 } from "@genforge/genlayer-client";
@@ -36,7 +32,17 @@ const defaultTargetResolutionDate = new Date(
 
 type ReportPage = "overview" | "packet" | "operations" | "chain";
 
-export function EnterpriseDisputeDashboard() {
+type TradeCaseDashboardProps = {
+  wallet: WalletConnectionState;
+  walletBusy: boolean;
+  onConnectWallet: () => Promise<void>;
+  onDisconnectWallet: () => Promise<void>;
+};
+
+export function EnterpriseDisputeDashboard({
+  wallet,
+  walletBusy,
+}: TradeCaseDashboardProps) {
   const publicConfig = getPublicGenLayerConfig();
   const walletConfigIssues = getWalletConfigIssues(publicConfig);
   const submissionConfigIssues = getDisputeSubmissionConfigIssues(publicConfig);
@@ -84,13 +90,6 @@ export function EnterpriseDisputeDashboard() {
     status: "idle",
     message:
       "Import trade documents, build a case file, connect a wallet, then submit the bounded packet for validator adjudication.",
-  });
-  const [wallet, setWallet] = useState<WalletConnectionState>({
-    status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
-    message: isBrowserWalletAvailable()
-      ? "Connect a browser wallet to prepare trade document adjudication."
-      : "No browser wallet provider was detected in this browser.",
-    providerLabel: getBrowserWalletLabel(),
   });
 
   const evidenceItems = useMemo(
@@ -184,54 +183,6 @@ export function EnterpriseDisputeDashboard() {
     } finally {
       setBusy(false);
     }
-  }
-
-  async function handleConnectWallet() {
-    if (!isBrowserWalletAvailable()) {
-      setWallet({
-        status: "missing_provider",
-        message:
-          "An injected browser wallet is required for trade document adjudication.",
-        providerLabel: getBrowserWalletLabel(),
-      });
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const connection = await connectBrowserWallet({
-        network: publicConfig.network,
-        rpcUrl: publicConfig.rpcUrl,
-      });
-
-      setWallet({
-        status: "connected",
-        address: connection.address,
-        network: connection.network,
-        providerLabel: getBrowserWalletLabel(),
-        message: `${getBrowserWalletLabel()} connected on ${connection.network}. The trade case can now prepare signed submissions.`,
-      });
-    } catch (error) {
-      setWallet({
-        status: "error",
-        providerLabel: getBrowserWalletLabel(),
-        message:
-          error instanceof Error ? error.message : "Failed to connect wallet.",
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleDisconnectWallet() {
-    setBusy(true);
-    const result = await disconnectBrowserWallet();
-    setWallet({
-      status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
-      providerLabel: getBrowserWalletLabel(),
-      message: result.message,
-    });
-    setBusy(false);
   }
 
   function updateResolutionState(
@@ -653,9 +604,8 @@ export function EnterpriseDisputeDashboard() {
           <div className="eyebrow">Trade Adjudication</div>
           <h2>Goods document case before validator escalation</h2>
           <p>
-            Capture buyer and seller positions, PO terms, shipment documents,
-            requested settlement, and evidence readiness before any
-            wallet-signed GenLayer action.
+            Buyer/seller positions, PO terms, shipment documents, settlement,
+            and GenLayer receipt.
           </p>
           <div className="status-rail" aria-label="Dispute workflow">
             <span className="done">Intake</span>
@@ -1138,27 +1088,10 @@ export function EnterpriseDisputeDashboard() {
                   <div className="action-row">
                     <button
                       type="button"
-                      className="secondary-button"
-                      onClick={handleConnectWallet}
-                      disabled={busy || wallet.status === "connected"}
-                    >
-                      {wallet.status === "connected"
-                        ? "Wallet Connected"
-                        : "Connect Wallet"}
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={handleDisconnectWallet}
-                      disabled={busy || wallet.status !== "connected"}
-                    >
-                      Disconnect
-                    </button>
-                    <button
-                      type="button"
                       onClick={handleSubmitOnchain}
                       disabled={
                         busy ||
+                        walletBusy ||
                         !report ||
                         report.decision !== "ACCEPT_FOR_SCORING" ||
                         wallet.status !== "connected" ||
