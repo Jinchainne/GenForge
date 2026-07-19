@@ -4,6 +4,9 @@ export interface PublicGenLayerConfig {
   network?: GenLayerClientConfig["network"];
   contractAddress?: string;
   disputeContractAddress?: string;
+  tokenFactoryAddress?: string;
+  tokenFactoryMethod: string;
+  tokenFactoryReadbackMethod?: string;
   rpcUrl?: string;
   studioUrl: string;
 }
@@ -16,6 +19,11 @@ const publicConfig: PublicGenLayerConfig = {
   contractAddress: process.env.NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS,
   disputeContractAddress:
     process.env.NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS,
+  tokenFactoryAddress: process.env.NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS,
+  tokenFactoryMethod:
+    process.env.NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD ?? "deploy_token",
+  tokenFactoryReadbackMethod:
+    process.env.NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD,
   rpcUrl:
     process.env.NEXT_PUBLIC_GENLAYER_RPC_URL ??
     "https://studio.genlayer.com/api",
@@ -61,6 +69,21 @@ export function getDisputeSubmissionConfigIssues(
 
   if (!config.disputeContractAddress) {
     issues.push("NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS is missing.");
+  }
+
+  return issues;
+}
+
+export function getTokenDeploymentConfigIssues(
+  config: PublicGenLayerConfig,
+): string[] {
+  const issues = getWalletConfigIssues(config);
+
+  if (!config.tokenFactoryAddress) {
+    issues.push("NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS is missing.");
+  }
+  if (!config.tokenFactoryMethod) {
+    issues.push("NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD is missing.");
   }
 
   return issues;

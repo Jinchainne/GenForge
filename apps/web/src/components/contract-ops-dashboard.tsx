@@ -29,8 +29,14 @@ type OpsStatusResponse = {
       rpcUrl?: string;
       reviewContractAddress?: string;
       disputeContractAddress?: string;
+      tokenFactoryAddress?: string;
+      tokenFactoryMethod?: string;
     };
     browserSubmissionReadiness: {
+      status: "ready" | "blocked";
+      blockers: string[];
+    };
+    tokenDeploymentReadiness: {
       status: "ready" | "blocked";
       blockers: string[];
     };
@@ -81,6 +87,7 @@ export function ContractOpsDashboard() {
     deployState.status !== "running";
   const operatorRailState = status?.deployReadiness.status ?? "idle";
   const browserRailState = status?.browserSubmissionReadiness.status ?? "idle";
+  const tokenRailState = status?.tokenDeploymentReadiness.status ?? "idle";
 
   async function loadStatus(options?: { showLoading?: boolean }) {
     if (options?.showLoading ?? true) {
@@ -180,43 +187,6 @@ export function ContractOpsDashboard() {
   return (
     <section className="dispute-shell">
       <div className="submission-layout">
-        <section className="panel hero-panel">
-          <div className="eyebrow">Contract Operations</div>
-          <h2>Deploy, verify, and explain real GenLayer contract readiness</h2>
-          <p>
-            This workspace exposes the operator truth: CLI availability,
-            network, active account, balance, public runtime envs, and the
-            exact blockers preventing live contract deployment.
-          </p>
-          <div className="status-rail" aria-label="Operator workflow">
-            <span className="done">CLI</span>
-            <span className={status?.account ? "done" : "active"}>Account</span>
-            <span
-              className={
-                status?.deployReadiness.status === "ready_to_deploy"
-                  ? "done"
-                  : "active"
-              }
-            >
-              Deploy
-            </span>
-            <span
-              className={
-                status?.browserSubmissionReadiness.status === "ready"
-                  ? "done"
-                  : "active"
-              }
-            >
-              Wallet
-            </span>
-          </div>
-          <p className="footnote">
-            Hosted production can inspect configuration, but real deployment
-            requires a secure operator environment with CLI access and funded
-            GEN.
-          </p>
-        </section>
-
         <section className="panel">
           <div className="panel-header">
             <div>
@@ -226,7 +196,7 @@ export function ContractOpsDashboard() {
             <span>{loading ? "loading" : operatorRailState}</span>
           </div>
           <div className="action-row">
-              <button
+            <button
               type="button"
               className="secondary-button"
               onClick={() => void loadStatus()}
@@ -268,6 +238,56 @@ export function ContractOpsDashboard() {
             <div>
               <dt>Operator deploy</dt>
               <dd>{status?.operatorDeployEnabled ? "enabled" : "disabled"}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className="panel hero-panel workbench-rail">
+          <div className="eyebrow">Contract Operations</div>
+          <h2>Real deployment readiness, not simulated success</h2>
+          <p>
+            Inspect CLI, account funding, public runtime config, and exact
+            blockers before any operator deployment command is allowed.
+          </p>
+          <div className="status-rail" aria-label="Operator workflow">
+            <span className="done">CLI</span>
+            <span className={status?.account ? "done" : "active"}>Account</span>
+            <span
+              className={
+                status?.deployReadiness.status === "ready_to_deploy"
+                  ? "done"
+                  : "active"
+              }
+            >
+              Deploy
+            </span>
+            <span
+              className={
+                status?.browserSubmissionReadiness.status === "ready"
+                  ? "done"
+                  : "active"
+              }
+            >
+              Wallet
+            </span>
+            <span
+              className={
+                status?.tokenDeploymentReadiness.status === "ready"
+                  ? "done"
+                  : "active"
+              }
+            >
+              Token
+            </span>
+          </div>
+          <dl className="rail-facts">
+            <div>
+              <dt>Deployment rule</dt>
+              <dd>Requires CLI, funded account, and explicit operator flag</dd>
+            </div>
+            <div>
+              <dt>Browser rule</dt>
+              <dd>Wallet can submit only to configured public addresses</dd>
             </div>
           </dl>
         </section>
@@ -320,6 +340,31 @@ export function ContractOpsDashboard() {
                 <p>
                   MetaMask submission can target the configured review and
                   dispute contracts from the hosted interface.
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section className="panel">
+            <div className="panel-header">
+              <h3>Token Deployment Readiness</h3>
+              <span>{tokenRailState}</span>
+            </div>
+            {status?.tokenDeploymentReadiness.blockers.length ? (
+              <div className="error-callout">
+                <strong>Token factory blockers</strong>
+                <ul className="stack-list compact-list">
+                  {status.tokenDeploymentReadiness.blockers.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="callout">
+                <strong>Token factory path is configured</strong>
+                <p>
+                  The Token Launch workspace can send wallet-signed requests to
+                  the configured GenLayer factory contract.
                 </p>
               </div>
             )}
@@ -395,6 +440,14 @@ export function ContractOpsDashboard() {
               <div>
                 <dt>Dispute contract</dt>
                 <dd>{status?.publicRuntime.disputeContractAddress ?? "Missing"}</dd>
+              </div>
+              <div>
+                <dt>Token factory</dt>
+                <dd>{status?.publicRuntime.tokenFactoryAddress ?? "Missing"}</dd>
+              </div>
+              <div>
+                <dt>Token method</dt>
+                <dd>{status?.publicRuntime.tokenFactoryMethod ?? "Missing"}</dd>
               </div>
             </dl>
           </section>

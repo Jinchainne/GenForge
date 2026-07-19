@@ -57,6 +57,9 @@ Optional for browser-wallet enterprise dispute submission:
 - `NEXT_PUBLIC_GENLAYER_RPC_URL`
 - `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS`
 - `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`
+- `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS`
+- `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD`
+- `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD`
 - `NEXT_PUBLIC_GENLAYER_STUDIO_URL`
 
 Optional for secure operator-side live deploy commands:
@@ -90,6 +93,9 @@ Recommended Vercel environment variables:
 - `NEXT_PUBLIC_GENLAYER_RPC_URL`
 - `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS`
 - `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`
+- `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS`
+- `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD`
+- `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD`
 - `NEXT_PUBLIC_GENLAYER_STUDIO_URL`
 
 The repository includes [apps/web/vercel.json](/abs/path/C:/Users/Asus/Desktop/genforge-submission/apps/web/vercel.json:1) to pin API max duration for the review and dispute routes.
@@ -105,8 +111,10 @@ Observed production constraint on July 17, 2026:
 2. Run `genlayer network studionet` or the intended target network.
 3. Deploy `contracts/genforge_judge/review_submission.py`.
 4. Deploy `contracts/genforge_judge/resolve_enterprise_dispute.py`.
-5. Copy the real contract addresses into Vercel as `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS` and `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`.
-6. Redeploy `apps/web`, then verify wallet submission and receipt tracking from the browser UI.
+5. Deploy or configure the GenLayer token factory contract used by Token Launch.
+6. Copy the real contract addresses into Vercel as `NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS`, `NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS`, and `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS`.
+7. Configure `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD` for the factory write method, and optionally `NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD` for receipt readback.
+8. Redeploy `apps/web`, then verify wallet submission and receipt tracking from the browser UI.
 
 ## Contract tests
 

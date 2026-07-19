@@ -293,31 +293,6 @@ export function EnterpriseDisputeDashboard() {
   return (
     <section className="dispute-shell">
       <div className="submission-layout">
-        <section className="panel hero-panel">
-          <div className="eyebrow">Enterprise Adjudication</div>
-          <h2>
-            Two-sided dispute intake, evidence readiness, and blockchain-bound
-            adjudication prep
-          </h2>
-          <p>
-            Build a bounded enterprise case packet before escalating the final
-            decision to GenLayer validators.
-          </p>
-          <div className="status-rail" aria-label="Dispute workflow">
-            <span className="done">Intake</span>
-            <span className={report ? "done" : "active"}>Dossier</span>
-            <span className={wallet.status === "connected" ? "done" : ""}>
-              Wallet
-            </span>
-            <span>Consensus</span>
-          </div>
-          <p className="footnote">
-            Best fit: supplier disputes, SLA breaches, logistics claims, and
-            legal-ops escalation where one internal server should not make the
-            final call alone.
-          </p>
-        </section>
-
         <section className="panel">
           <div className="panel-header">
             <div>
@@ -577,6 +552,33 @@ export function EnterpriseDisputeDashboard() {
             </button>
           </form>
           {errorMessage ? <p className="error-callout">{errorMessage}</p> : null}
+        </section>
+
+        <section className="panel hero-panel workbench-rail">
+          <div className="eyebrow">Enterprise Adjudication</div>
+          <h2>Dispute dossier before validator escalation</h2>
+          <p>
+            Capture both parties, contract terms, requested remedy, and evidence
+            readiness before any wallet-signed GenLayer action.
+          </p>
+          <div className="status-rail" aria-label="Dispute workflow">
+            <span className="done">Intake</span>
+            <span className={report ? "done" : "active"}>Dossier</span>
+            <span className={wallet.status === "connected" ? "done" : ""}>
+              Wallet
+            </span>
+            <span>Consensus</span>
+          </div>
+          <dl className="rail-facts">
+            <div>
+              <dt>Best fit</dt>
+              <dd>SLA, supplier, logistics, and legal-ops disputes</dd>
+            </div>
+            <div>
+              <dt>On-chain boundary</dt>
+              <dd>Only after dossier readiness and wallet confirmation</dd>
+            </div>
+          </dl>
         </section>
       </div>
 

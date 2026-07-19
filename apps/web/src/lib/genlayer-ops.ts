@@ -31,8 +31,14 @@ export interface GenLayerCliStatus {
     rpcUrl?: string;
     reviewContractAddress?: string;
     disputeContractAddress?: string;
+    tokenFactoryAddress?: string;
+    tokenFactoryMethod?: string;
   };
   browserSubmissionReadiness: {
+    status: "ready" | "blocked";
+    blockers: string[];
+  };
+  tokenDeploymentReadiness: {
     status: "ready" | "blocked";
     blockers: string[];
   };
@@ -102,11 +108,13 @@ function getRepoRoot(): string {
   return path.resolve(process.cwd(), "..", "..");
 }
 
-function getDeployCommand(contract: "review" | "dispute"): string {
+function getDeployCommand(contract: "review" | "dispute" | "token_factory"): string {
   const contractFile =
     contract === "review"
       ? "contracts/genforge_judge/review_submission.py"
-      : "contracts/genforge_judge/resolve_enterprise_dispute.py";
+      : contract === "dispute"
+        ? "contracts/genforge_judge/resolve_enterprise_dispute.py"
+        : "contracts/genforge_judge/deploy_project_token.py";
 
   return `genlayer deploy --contract ${contractFile}`;
 }
@@ -121,6 +129,10 @@ export async function getGenLayerCliStatus(): Promise<GenLayerCliStatus> {
     reviewContractAddress: process.env.NEXT_PUBLIC_GENLAYER_CONTRACT_ADDRESS,
     disputeContractAddress:
       process.env.NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS,
+    tokenFactoryAddress:
+      process.env.NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS,
+    tokenFactoryMethod:
+      process.env.NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD ?? "deploy_token",
   };
 
   const commands = [
@@ -183,6 +195,27 @@ export async function getGenLayerCliStatus(): Promise<GenLayerCliStatus> {
         "NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS is not configured for the dispute contract.",
       );
     }
+    const tokenBlockers: string[] = [];
+    if (!publicRuntime.network) {
+      tokenBlockers.push(
+        "NEXT_PUBLIC_GENLAYER_NETWORK is not configured for browser-wallet token deployment.",
+      );
+    }
+    if (!publicRuntime.rpcUrl) {
+      tokenBlockers.push(
+        "NEXT_PUBLIC_GENLAYER_RPC_URL is not configured for browser-wallet token deployment.",
+      );
+    }
+    if (!publicRuntime.tokenFactoryAddress) {
+      tokenBlockers.push(
+        "NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS is not configured for token deployment.",
+      );
+    }
+    if (!publicRuntime.tokenFactoryMethod) {
+      tokenBlockers.push(
+        "NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD is not configured for token deployment.",
+      );
+    }
 
     return {
       cliAvailable: true,
@@ -212,6 +245,10 @@ export async function getGenLayerCliStatus(): Promise<GenLayerCliStatus> {
       browserSubmissionReadiness: {
         status: browserBlockers.length === 0 ? "ready" : "blocked",
         blockers: browserBlockers,
+      },
+      tokenDeploymentReadiness: {
+        status: tokenBlockers.length === 0 ? "ready" : "blocked",
+        blockers: tokenBlockers,
       },
       deployReadiness: {
         status: !operatorDeployEnabled
@@ -266,6 +303,37 @@ export async function getGenLayerCliStatus(): Promise<GenLayerCliStatus> {
           ...(!publicRuntime.disputeContractAddress
             ? [
                 "NEXT_PUBLIC_GENLAYER_DISPUTE_CONTRACT_ADDRESS is not configured for the dispute contract.",
+              ]
+            : []),
+        ],
+      },
+      tokenDeploymentReadiness: {
+        status:
+          publicRuntime.tokenFactoryAddress &&
+          publicRuntime.tokenFactoryMethod &&
+          publicRuntime.network &&
+          publicRuntime.rpcUrl
+            ? "ready"
+            : "blocked",
+        blockers: [
+          ...(!publicRuntime.network
+            ? [
+                "NEXT_PUBLIC_GENLAYER_NETWORK is not configured for browser-wallet token deployment.",
+              ]
+            : []),
+          ...(!publicRuntime.rpcUrl
+            ? [
+                "NEXT_PUBLIC_GENLAYER_RPC_URL is not configured for browser-wallet token deployment.",
+              ]
+            : []),
+          ...(!publicRuntime.tokenFactoryAddress
+            ? [
+                "NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_ADDRESS is not configured for token deployment.",
+              ]
+            : []),
+          ...(!publicRuntime.tokenFactoryMethod
+            ? [
+                "NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_METHOD is not configured for token deployment.",
               ]
             : []),
         ],
