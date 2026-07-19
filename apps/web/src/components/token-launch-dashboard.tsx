@@ -369,7 +369,7 @@ export function TokenLaunchDashboard() {
                   tokenConfigIssues.length > 0
                 }
               >
-                {busy ? "Submitting..." : "Deploy Token"}
+                {busy ? "Submitting..." : "Record Reward Token"}
               </button>
               <button
                 type="button"
@@ -384,11 +384,12 @@ export function TokenLaunchDashboard() {
         </section>
 
         <section className="panel hero-panel workbench-rail">
-          <div className="eyebrow">Token Launch</div>
-          <h2>Wallet-signed token deployment through a GenLayer factory</h2>
+          <div className="eyebrow">Reward Token</div>
+          <h2>Wallet-signed reward registry through a GenLayer factory</h2>
           <p>
-            Prepare a bounded token request. Deployment stays blocked until a
-            real factory address and method are configured.
+            Prepare a bounded token request for accepted builder projects.
+            Submission stays blocked until a real factory address and method are
+            configured.
           </p>
           <div className="status-rail" aria-label="Token deployment workflow">
             <span className="done">Plan</span>

@@ -14,9 +14,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GenForge",
+  title: "GenForge Builder Review Console",
   description:
-    "Deterministic GitHub intake and GenLayer-backed project evaluation for public submissions.",
+    "GenLayer builder submission review, validator consensus, appeal packets, and reward token records.",
 };
 
 export default function RootLayout({

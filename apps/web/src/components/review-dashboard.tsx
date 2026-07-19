@@ -318,12 +318,16 @@ export function ReviewDashboard() {
         <section className="panel submission-panel">
           <div className="submission-intro">
             <h1>GenForge</h1>
-            <p>AI-native engineering review for GenLayer</p>
+            <p>
+              Submission gate for GenLayer builder projects, milestone criteria,
+              and validator-ready evidence.
+            </p>
           </div>
           <div className="scope-strip" aria-label="Review scope">
-            <span>Deterministic gate</span>
-            <span>Bounded evidence</span>
-            <span>Live GenLayer path</span>
+            <span>Criteria gate</span>
+            <span>Code evidence</span>
+            <span>Consensus write</span>
+            <span>Receipt tracking</span>
           </div>
           <form className="submission-form" onSubmit={handleSubmit}>
             <label htmlFor="repository-url">Public GitHub repository URL</label>
@@ -339,7 +343,7 @@ export function ReviewDashboard() {
             <button type="submit">
               {state === "validating_url" || state === "collecting_evidence"
                 ? "Reviewing..."
-                : "Run GenLayer Review"}
+                : "Review Builder Project"}
             </button>
           </form>
           <p className="subtle">

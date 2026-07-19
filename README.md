@@ -1,18 +1,20 @@
 # GenForge
 
-GenForge is a GenLayer-native adjudication platform for:
+GenForge is a GenLayer-native builder submission review console for:
 
-- public GitHub submission review
-- enterprise dispute intake and bilateral resolution
+- public GitHub project review against builder milestone criteria
+- bounded evidence packets for validator consensus
+- appeal or dispute dossiers when a review needs escalation
+- wallet-signed reward token records for accepted builder tracks
 
-It performs bounded pipelines:
+It performs a bounded review pipeline:
 
-1. Repository review
-2. Enterprise dispute dossier generation
-3. Deterministic readiness and gate checks
+1. Read-only GitHub intake without executing submitted code
+2. Deterministic readiness and rejection-gate checks
+3. Evidence, confidence, scoring, and remediation generation
 4. Bounded GenLayer request construction
-5. Wallet-signed submission to live GenLayer contracts when configured
-6. Builder-facing or enterprise-facing findings, confidence signals, and resolution artifacts
+5. Wallet-signed submission to live GenLayer Intelligent Contracts
+6. Receipt tracking, appeal packet preparation, and reward token recording
 
 ## Workspace
 

@@ -314,9 +314,9 @@ export function EnterpriseDisputeDashboard() {
           <div className="panel-header">
             <div>
               <div className="eyebrow">Case Intake</div>
-              <h3>Enterprise Dispute Workspace</h3>
+              <h3>Appeal and dispute dossier</h3>
             </div>
-            <span>2-party dossier</span>
+            <span>validator packet</span>
           </div>
           <form className="submission-form" onSubmit={handleSubmit}>
             <label htmlFor="case-title">Case title</label>
@@ -565,7 +565,7 @@ export function EnterpriseDisputeDashboard() {
               }
             />
             <button type="submit">
-              {busy ? "Building dossier..." : "Generate Enterprise Dossier"}
+              {busy ? "Building dossier..." : "Build Appeal Dossier"}
             </button>
           </form>
           {errorMessage ? <p className="error-callout">{errorMessage}</p> : null}

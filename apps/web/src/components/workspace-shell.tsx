@@ -28,36 +28,36 @@ const workspaceNodes: Array<{
   summary: string;
 }> = [
   {
-    id: "enterprise_dispute",
-    group: "cases",
-    label: "Enterprise Dispute",
-    code: "CASE-01",
-    summary:
-      "Bilateral intake, evidence packet, counterparty readiness, and wallet escalation.",
-  },
-  {
     id: "repo_review",
     group: "evidence",
-    label: "Repository Review",
-    code: "REV-02",
+    label: "Project Review",
+    code: "SUB-01",
     summary:
-      "Read-only GitHub evidence, GenLayer gate checks, scoring, and remediation.",
+      "Validate GenLayer builder submissions against milestone rules, evidence, and on-chain consensus.",
+  },
+  {
+    id: "enterprise_dispute",
+    group: "cases",
+    label: "Appeal Dossier",
+    code: "APL-02",
+    summary:
+      "Prepare bounded evidence for reviewer disputes, counterparty notice, and validator adjudication.",
   },
   {
     id: "contract_ops",
     group: "chain",
-    label: "Contract Ops",
+    label: "Runtime Ops",
     code: "OPS-03",
     summary:
-      "CLI status, deployment blockers, public runtime config, and operator commands.",
+      "Verify deployed Intelligent Contracts, public runtime config, wallet readiness, and operator commands.",
   },
   {
     id: "token_launch",
     group: "chain",
-    label: "Token Launch",
+    label: "Reward Token",
     code: "TOK-04",
     summary:
-      "Wallet-signed project token deployment through a configured GenLayer factory.",
+      "Record wallet-signed reward token launches for accepted GenLayer builder tracks.",
   },
 ];
 
@@ -68,23 +68,23 @@ const treeGroups: Array<{
 }> = [
   {
     id: "cases",
-    label: "Case Files",
-    description: "Commercial adjudication workspace",
+    label: "Appeals",
+    description: "Dispute packets for manual review",
   },
   {
     id: "evidence",
-    label: "Evidence Desk",
-    description: "Repository review and confidence",
+    label: "Submission Gate",
+    description: "Repo evidence, scoring, and consensus",
   },
   {
     id: "chain",
-    label: "GenLayer Ops",
-    description: "Runtime, wallet, and deploy path",
+    label: "Chain Controls",
+    description: "Wallet, contracts, receipts, rewards",
   },
 ];
 
 export function WorkspaceShell() {
-  const [workspace, setWorkspace] = useState<Workspace>("enterprise_dispute");
+  const [workspace, setWorkspace] = useState<Workspace>("repo_review");
   const [openGroups, setOpenGroups] = useState<Record<TreeGroupId, boolean>>({
     cases: true,
     evidence: true,
@@ -157,10 +157,18 @@ export function WorkspaceShell() {
             GF
           </span>
           <div>
-            <div className="eyebrow">GenForge Control Surface</div>
-            <strong>GenLayer workbench</strong>
+            <div className="eyebrow">GenForge</div>
+            <strong>Builder review console</strong>
           </div>
         </div>
+
+        <section className="workspace-purpose" aria-label="Product purpose">
+          <strong>Use this to judge GenLayer builder projects.</strong>
+          <p>
+            Collect repo evidence, enforce milestone gates, submit bounded
+            decisions to Intelligent Contracts, then track receipts and rewards.
+          </p>
+        </section>
 
         <nav className="workspace-tree" aria-label="Workspace tree">
           {treeGroups.map((group) => {

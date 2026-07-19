@@ -3,23 +3,27 @@ import { describe, expect, it } from "vitest";
 import { WorkspaceShell } from "@/components/workspace-shell";
 
 describe("WorkspaceShell", () => {
-  it("renders the enterprise workspace by default", () => {
+  it("renders the builder project review workspace by default", () => {
     render(<WorkspaceShell />);
 
-    expect(screen.getByText("GenForge Control Surface")).toBeInTheDocument();
-    expect(screen.getByText("GenLayer workbench")).toBeInTheDocument();
-    expect(screen.getByText("Case Files")).toBeInTheDocument();
+    expect(screen.getByText("Builder review console")).toBeInTheDocument();
+    expect(
+      screen.getByText("Use this to judge GenLayer builder projects."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Submission Gate")).toBeInTheDocument();
     expect(screen.getByText("Wallet runtime")).toBeInTheDocument();
     expect(
-      screen.getAllByRole("button", { name: "Enterprise Dispute" }).length,
+      screen.getAllByRole("button", { name: "Project Review" }).length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getAllByRole("button", { name: "Contract Ops" }).length,
+      screen.getAllByRole("button", { name: "Runtime Ops" }).length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getAllByRole("button", { name: "Token Launch" }).length,
+      screen.getAllByRole("button", { name: "Reward Token" }).length,
     ).toBeGreaterThan(0);
-    expect(screen.getByLabelText("Case title")).toBeInTheDocument();
-    expect(screen.getByText("Generate Enterprise Dossier")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Public GitHub repository URL"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Review Builder Project")).toBeInTheDocument();
   });
 });
