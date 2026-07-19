@@ -8,6 +8,8 @@ import type {
 } from "@genforge/domain";
 import {
   connectBrowserWallet,
+  disconnectBrowserWallet,
+  getBrowserWalletLabel,
   isBrowserWalletAvailable,
   submitGenLayerReviewFromBrowser,
   trackGenLayerReviewTransaction,
@@ -84,8 +86,9 @@ export function ReviewDashboard() {
   const [wallet, setWallet] = useState<WalletConnectionState>({
     status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
     message: isBrowserWalletAvailable()
-      ? "Connect MetaMask to submit a bounded review request on-chain."
+      ? "Connect a browser wallet to submit a bounded review request on-chain."
       : "No browser wallet provider was detected in this browser.",
+    providerLabel: getBrowserWalletLabel(),
   });
   const [busyOnchain, setBusyOnchain] = useState(false);
 
@@ -136,7 +139,7 @@ export function ReviewDashboard() {
           status: "idle",
           message:
             payload.report.decision === "ACCEPT_FOR_SCORING"
-              ? "The deterministic gate passed. Connect MetaMask to request on-chain adjudication."
+              ? "The deterministic gate passed. Connect a wallet to request on-chain adjudication."
               : "Fix the triggered findings, then resubmit this repository for another review attempt.",
         },
       };
@@ -161,7 +164,8 @@ export function ReviewDashboard() {
       setWallet({
         status: "missing_provider",
         message:
-          "MetaMask or another compatible wallet is required for wallet-signed GenLayer submissions.",
+          "An injected browser wallet is required for wallet-signed GenLayer submissions.",
+        providerLabel: getBrowserWalletLabel(),
       });
       return;
     }
@@ -183,17 +187,30 @@ export function ReviewDashboard() {
         status: "connected",
         address: connection.address,
         network: connection.network,
-        message: `Wallet connected on ${connection.network}.`,
+        providerLabel: getBrowserWalletLabel(),
+        message: `${getBrowserWalletLabel()} connected on ${connection.network}.`,
       });
     } catch (error) {
       setWallet({
         status: "error",
+        providerLabel: getBrowserWalletLabel(),
         message:
           error instanceof Error ? error.message : "Failed to connect wallet.",
       });
     } finally {
       setBusyOnchain(false);
     }
+  }
+
+  async function handleDisconnectWallet() {
+    setBusyOnchain(true);
+    const result = await disconnectBrowserWallet();
+    setWallet({
+      status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
+      providerLabel: getBrowserWalletLabel(),
+      message: result.message,
+    });
+    setBusyOnchain(false);
   }
 
   function updateCurrentAttemptOnchain(onchain: OnchainWorkflowState) {
@@ -215,7 +232,7 @@ export function ReviewDashboard() {
     setBusyOnchain(true);
     updateCurrentAttemptOnchain({
       status: "submitting",
-      message: "Waiting for MetaMask confirmation and GenLayer acceptance.",
+      message: "Waiting for wallet confirmation and GenLayer acceptance.",
       walletAddress: wallet.address,
       updatedAt: new Date().toISOString(),
     });
@@ -357,10 +374,11 @@ export function ReviewDashboard() {
                 onchain={currentAttempt?.onchain ?? {
                   status: "idle",
                   message:
-                    "Connect MetaMask after a successful deterministic review to submit the bounded request on-chain.",
+                    "Connect a wallet after a successful deterministic review to submit the bounded request on-chain.",
                 }}
                 busy={busyOnchain}
                 onConnectWallet={handleConnectWallet}
+                onDisconnectWallet={handleDisconnectWallet}
                 onSubmitOnchain={handleSubmitOnchain}
                 onRefreshStatus={handleRefreshOnchain}
               />

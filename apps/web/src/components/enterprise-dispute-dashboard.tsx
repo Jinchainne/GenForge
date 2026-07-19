@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import {
   connectBrowserWallet,
+  disconnectBrowserWallet,
+  getBrowserWalletLabel,
   isBrowserWalletAvailable,
   submitBrowserContractJson,
   trackBrowserContractJsonTransaction,
@@ -76,13 +78,14 @@ export function EnterpriseDisputeDashboard() {
   }>({
     status: "idle",
     message:
-      "Generate a dossier, connect MetaMask, then submit the dispute packet for validator adjudication.",
+      "Generate a dossier, connect a wallet, then submit the dispute packet for validator adjudication.",
   });
   const [wallet, setWallet] = useState<WalletConnectionState>({
     status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
     message: isBrowserWalletAvailable()
-      ? "Connect MetaMask to prepare enterprise dispute adjudication."
+      ? "Connect a browser wallet to prepare enterprise dispute adjudication."
       : "No browser wallet provider was detected in this browser.",
+    providerLabel: getBrowserWalletLabel(),
   });
 
   const evidenceItems = useMemo(
@@ -140,7 +143,8 @@ export function EnterpriseDisputeDashboard() {
       setWallet({
         status: "missing_provider",
         message:
-          "MetaMask or another compatible wallet is required for enterprise adjudication.",
+          "An injected browser wallet is required for enterprise adjudication.",
+        providerLabel: getBrowserWalletLabel(),
       });
       return;
     }
@@ -156,17 +160,30 @@ export function EnterpriseDisputeDashboard() {
         status: "connected",
         address: connection.address,
         network: connection.network,
-        message: `Wallet connected on ${connection.network}. The enterprise dispute workflow can now prepare signed submissions.`,
+        providerLabel: getBrowserWalletLabel(),
+        message: `${getBrowserWalletLabel()} connected on ${connection.network}. The enterprise dispute workflow can now prepare signed submissions.`,
       });
     } catch (error) {
       setWallet({
         status: "error",
+        providerLabel: getBrowserWalletLabel(),
         message:
           error instanceof Error ? error.message : "Failed to connect wallet.",
       });
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleDisconnectWallet() {
+    setBusy(true);
+    const result = await disconnectBrowserWallet();
+    setWallet({
+      status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
+      providerLabel: getBrowserWalletLabel(),
+      message: result.message,
+    });
+    setBusy(false);
   }
 
   function updateResolutionState(
@@ -987,7 +1004,11 @@ export function EnterpriseDisputeDashboard() {
                   <dl className="source-grid">
                     <div>
                       <dt>Wallet</dt>
-                      <dd>{wallet.address ?? "Not connected"}</dd>
+                      <dd>
+                        {wallet.address
+                          ? `${wallet.providerLabel ?? "Browser Wallet"}: ${wallet.address}`
+                          : wallet.providerLabel ?? "Not connected"}
+                      </dd>
                     </div>
                     <div>
                       <dt>Network</dt>
@@ -1044,7 +1065,15 @@ export function EnterpriseDisputeDashboard() {
                     >
                       {wallet.status === "connected"
                         ? "Wallet Connected"
-                        : "Connect MetaMask"}
+                        : "Connect Wallet"}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={handleDisconnectWallet}
+                      disabled={busy || wallet.status !== "connected"}
+                    >
+                      Disconnect
                     </button>
                     <button
                       type="button"

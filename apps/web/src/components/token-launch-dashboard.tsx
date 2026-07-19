@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import {
   connectBrowserWallet,
+  disconnectBrowserWallet,
+  getBrowserWalletLabel,
   isBrowserWalletAvailable,
   submitBrowserContractJson,
   trackBrowserContractJsonTransaction,
@@ -31,8 +33,9 @@ export function TokenLaunchDashboard() {
   const [wallet, setWallet] = useState<WalletConnectionState>({
     status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
     message: isBrowserWalletAvailable()
-      ? "Connect MetaMask before creating a wallet-signed token deployment."
+      ? "Connect a browser wallet before creating a wallet-signed token deployment."
       : "No browser wallet provider was detected in this browser.",
+    providerLabel: getBrowserWalletLabel(),
   });
   const [busy, setBusy] = useState(false);
   const [deployState, setDeployState] = useState<{
@@ -81,7 +84,8 @@ export function TokenLaunchDashboard() {
       setWallet({
         status: "missing_provider",
         message:
-          "MetaMask or another compatible wallet is required for GenLayer token deployment.",
+          "An injected browser wallet is required for GenLayer token deployment.",
+        providerLabel: getBrowserWalletLabel(),
       });
       return;
     }
@@ -102,7 +106,8 @@ export function TokenLaunchDashboard() {
         status: "connected",
         address: connection.address,
         network: connection.network,
-        message: `Wallet connected on ${connection.network}.`,
+        providerLabel: getBrowserWalletLabel(),
+        message: `${getBrowserWalletLabel()} connected on ${connection.network}.`,
       });
       setForm((current) => ({
         ...current,
@@ -111,12 +116,24 @@ export function TokenLaunchDashboard() {
     } catch (error) {
       setWallet({
         status: "error",
+        providerLabel: getBrowserWalletLabel(),
         message:
           error instanceof Error ? error.message : "Failed to connect wallet.",
       });
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleDisconnectWallet() {
+    setBusy(true);
+    const result = await disconnectBrowserWallet();
+    setWallet({
+      status: isBrowserWalletAvailable() ? "disconnected" : "missing_provider",
+      providerLabel: getBrowserWalletLabel(),
+      message: result.message,
+    });
+    setBusy(false);
   }
 
   async function handleDeployToken(event: React.FormEvent<HTMLFormElement>) {
@@ -332,7 +349,17 @@ export function TokenLaunchDashboard() {
                 onClick={handleConnectWallet}
                 disabled={busy || wallet.status === "connected"}
               >
-                {wallet.status === "connected" ? "Wallet Connected" : "Connect MetaMask"}
+                {wallet.status === "connected"
+                  ? "Wallet Connected"
+                  : "Connect Wallet"}
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={handleDisconnectWallet}
+                disabled={busy || wallet.status !== "connected"}
+              >
+                Disconnect
               </button>
               <button
                 type="submit"

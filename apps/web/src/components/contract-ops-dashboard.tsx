@@ -338,7 +338,7 @@ export function ContractOpsDashboard() {
               <div className="callout">
                 <strong>Browser wallet path is configured</strong>
                 <p>
-                  MetaMask submission can target the configured review and
+                  Wallet submission can target the configured review and
                   dispute contracts from the hosted interface.
                 </p>
               </div>

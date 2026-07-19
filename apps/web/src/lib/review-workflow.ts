@@ -19,6 +19,7 @@ export interface WalletConnectionState {
     | "error";
   address?: string;
   network?: string;
+  providerLabel?: string;
   message?: string;
 }
 

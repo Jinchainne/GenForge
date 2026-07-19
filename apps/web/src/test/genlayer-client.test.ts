@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   submitBrowserContractJson,
   connectBrowserWallet,
+  disconnectBrowserWallet,
+  getBrowserWalletLabel,
   submitGenLayerReview,
   submitGenLayerReviewFromBrowser,
   trackBrowserContractJsonTransaction,
@@ -145,6 +147,41 @@ describe("submitGenLayerReview", () => {
 
     expect(connection.address).toBe("0xabc0000000000000000000000000000000000000");
     expect(connectedNetwork).toBe("studionet");
+  });
+
+  it("labels common wallet providers without requiring MetaMask", () => {
+    expect(getBrowserWalletLabel({ request: async () => [], isRabby: true })).toBe(
+      "Rabby Wallet",
+    );
+    expect(getBrowserWalletLabel({ request: async () => [] })).toBe(
+      "Browser Wallet",
+    );
+  });
+
+  it("disconnects by revoking permissions when the provider supports it", async () => {
+    let revokeCalled = false;
+    const result = await disconnectBrowserWallet({
+      request: async ({ method }: { method: string }) => {
+        if (method === "wallet_revokePermissions") {
+          revokeCalled = true;
+        }
+        return null;
+      },
+    });
+
+    expect(revokeCalled).toBe(true);
+    expect(result.revoked).toBe(true);
+  });
+
+  it("falls back to local session clearing when wallet revoke is unavailable", async () => {
+    const result = await disconnectBrowserWallet({
+      request: async () => {
+        throw new Error("unsupported method");
+      },
+    });
+
+    expect(result.revoked).toBe(false);
+    expect(result.message).toContain("cleared the local wallet session");
   });
 
   it("submits through a browser wallet and returns a pending consensus state after acceptance", async () => {

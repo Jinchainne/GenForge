@@ -32,8 +32,8 @@ NEXT_PUBLIC_GENLAYER_TOKEN_FACTORY_READBACK_METHOD=
 ```
 
 `GENLAYER_PRIVATE_KEY` stays server-side only. `NEXT_PUBLIC_*` values are
-intentionally exposed to the browser so MetaMask can connect to the selected
-network and call the configured GenLayer contracts.
+intentionally exposed to the browser so a compatible wallet can connect to the
+selected network and call the configured GenLayer contracts.
 
 ## Scripts
 

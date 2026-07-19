@@ -19,6 +19,10 @@ export interface GenLayerClientConfig {
 
 export interface BrowserWalletProvider {
   request(args: { method: string; params?: unknown[] | object }): Promise<unknown>;
+  isMetaMask?: boolean;
+  isRabby?: boolean;
+  isCoinbaseWallet?: boolean;
+  isBraveWallet?: boolean;
 }
 
 export interface BrowserGenLayerClientConfig
@@ -221,6 +225,26 @@ function resolveProvider(
   return null;
 }
 
+export function getBrowserWalletLabel(provider?: BrowserWalletProvider): string {
+  const resolvedProvider = resolveProvider(provider);
+  if (!resolvedProvider) {
+    return "No wallet detected";
+  }
+  if (resolvedProvider.isRabby) {
+    return "Rabby Wallet";
+  }
+  if (resolvedProvider.isCoinbaseWallet) {
+    return "Coinbase Wallet";
+  }
+  if (resolvedProvider.isBraveWallet) {
+    return "Brave Wallet";
+  }
+  if (resolvedProvider.isMetaMask) {
+    return "MetaMask";
+  }
+  return "Browser Wallet";
+}
+
 async function loadSdkRuntime(
   config: Pick<
     GenLayerClientConfig,
@@ -282,7 +306,7 @@ async function createBrowserClients(config: BrowserGenLayerClientConfig): Promis
   const provider = resolveProvider(config.provider);
   if (!provider) {
     throw new Error(
-      "No browser wallet provider was found. Install MetaMask or a compatible wallet.",
+      "No browser wallet provider was found. Install or enable a compatible wallet.",
     );
   }
 
@@ -440,6 +464,35 @@ export async function connectBrowserWallet(
   };
 }
 
+export async function disconnectBrowserWallet(
+  provider?: BrowserWalletProvider,
+): Promise<{ revoked: boolean; message: string }> {
+  const resolvedProvider = resolveProvider(provider);
+  if (!resolvedProvider) {
+    return {
+      revoked: false,
+      message: "No browser wallet provider is available.",
+    };
+  }
+
+  try {
+    await resolvedProvider.request({
+      method: "wallet_revokePermissions",
+      params: [{ eth_accounts: {} }],
+    });
+    return {
+      revoked: true,
+      message: "Wallet account permission was revoked by the provider.",
+    };
+  } catch {
+    return {
+      revoked: false,
+      message:
+        "The wallet provider did not expose permission revocation, so GenForge cleared the local wallet session.",
+    };
+  }
+}
+
 async function parseBrowserContractReceipt(input: {
   config: Pick<GenLayerClientConfig, "network" | "contractAddress">;
   client: Record<string, unknown>;
@@ -534,7 +587,7 @@ export async function submitGenLayerReviewFromBrowser(
       contractAddress: config.contractAddress,
       judgment: null,
       parserMessage:
-        "Fix deterministic gate findings before asking MetaMask to submit the review on-chain.",
+        "Fix deterministic gate findings before asking a wallet to submit the review on-chain.",
     });
   }
 

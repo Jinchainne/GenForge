@@ -314,7 +314,7 @@ export async function generateEnterpriseDisputeReport(
         decision === "ACCEPT_FOR_SCORING"
           ? [
               "Send the counterparty packet through the notice channel and record delivery status.",
-              "Connect MetaMask and submit the bounded dispute packet to the enterprise adjudication contract once deployed.",
+              "Connect a wallet and submit the bounded dispute packet to the enterprise adjudication contract once deployed.",
               "Preserve the evidence chronology for manual appeal and audit review.",
             ]
           : issues.map((issue) => issue.action),

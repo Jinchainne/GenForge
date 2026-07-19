@@ -14,6 +14,7 @@ export function OnchainReviewPanel({
   onchain,
   busy,
   onConnectWallet,
+  onDisconnectWallet,
   onSubmitOnchain,
   onRefreshStatus,
 }: {
@@ -25,6 +26,7 @@ export function OnchainReviewPanel({
   onchain: OnchainWorkflowState;
   busy: boolean;
   onConnectWallet: () => void;
+  onDisconnectWallet: () => void;
   onSubmitOnchain: () => void;
   onRefreshStatus: () => void;
 }) {
@@ -44,7 +46,11 @@ export function OnchainReviewPanel({
       <dl className="source-grid">
         <div>
           <dt>Wallet</dt>
-          <dd>{wallet.address ?? "Not connected"}</dd>
+          <dd>
+            {wallet.address
+              ? `${wallet.providerLabel ?? "Browser Wallet"}: ${wallet.address}`
+              : wallet.providerLabel ?? "Not connected"}
+          </dd>
         </div>
         <div>
           <dt>Network</dt>
@@ -79,7 +85,7 @@ export function OnchainReviewPanel({
         <div className="callout">
           <strong>Submission config still incomplete</strong>
           <p>
-            MetaMask can connect once the wallet runtime is available, but
+            A compatible browser wallet can connect once the runtime is available, but
             on-chain submission still needs a deployed contract address.
           </p>
         </div>
@@ -102,7 +108,15 @@ export function OnchainReviewPanel({
           onClick={onConnectWallet}
           disabled={busy || wallet.status === "connected"}
         >
-          {wallet.status === "connected" ? "Wallet Connected" : "Connect MetaMask"}
+          {wallet.status === "connected" ? "Wallet Connected" : "Connect Wallet"}
+        </button>
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={onDisconnectWallet}
+          disabled={busy || wallet.status !== "connected"}
+        >
+          Disconnect
         </button>
         <button
           type="button"
